@@ -1,0 +1,8 @@
+34 (ADC1_CH6/RTC_GPIO4/GPIO34) <=> Pin 2 (Analog Output Vo)
+GND <=> Pin 3 (GND)
+16 (U2RXD) <=> Pin 6 (TXD)
+17 (U2TXD) <=> Pin 5 (RXD)
+USB 5V <=> Pin 4 (Vin)
+
+22 (I2C_SCL) <=> I2C_SCL
+23 (I2C_SDA) <=> I2C_SDA
