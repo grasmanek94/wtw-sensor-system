@@ -1,0 +1,15 @@
+{
+  "wifi_id": "SSID_NAME",
+  "wifi_pw": "12345678",
+  "name": "Coordinator",
+  "destination": "nrg-itho-b450.fritz.box",
+  "auth_user": "USERNAME",
+  "auth_pw": "PASSWORD",
+  "interval": "30",
+  "co2_ppm_high": 1150,
+  "co2_ppm_medium": 950,
+  "co2_ppm_low": 750,
+  "rh_high": 80.0,
+  "rh_medium": 60.0,
+  "rh_low": 40.0
+}
