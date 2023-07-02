@@ -9,14 +9,16 @@
 WiFiServer server(80);
 
 void init_wifi() {
-    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
-    WiFi.setHostname(global_config_data.device_custom_hostname.c_str()); //define hostname
-
     Serial.print("Hostname: ");
     Serial.println(global_config_data.device_custom_hostname);
 
     WiFi.persistent(false);
     WiFi.disconnect();
+
+    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+    WiFi.mode(WIFI_MODE_NULL);
+    WiFi.setHostname(global_config_data.device_custom_hostname.c_str());
+
     WiFi.mode(WIFI_STA);
     WiFi.begin(global_config_data.wifi_ssid, global_config_data.wifi_password);
 
@@ -28,7 +30,7 @@ void init_wifi() {
         Serial.print('.');
         delay(1000);
     }
-
+    
     Serial.println(WiFi.localIP());
 }
 
