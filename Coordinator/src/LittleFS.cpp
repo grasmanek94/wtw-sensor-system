@@ -68,19 +68,31 @@ static bool readConfig() {
 
     const String wifi_ssid = doc["wifi_id"];
     const String wifi_password = doc["wifi_pw"];
-    const String device_custom_name = doc["name"];
+    const String device_custom_hostname = doc["hostname"];
     const String destination_address = doc["destination"];
     const String auth_user = doc["auth_user"];
     const String auth_password = doc["auth_pw"];
     const int interval = doc["interval"];
+    const int co2_ppm_high = doc["co2_ppm_high"];
+    const int co2_ppm_medium = doc["co2_ppm_medium"];
+    const int co2_ppm_low = doc["co2_ppm_low"];
+    const float rh_high = doc["rh_high"];
+    const float rh_medium = doc["rh_medium"];
+    const float rh_low = doc["rh_low"];
 
     global_config_data.wifi_ssid = wifi_ssid;
     global_config_data.wifi_password = wifi_password;
-    global_config_data.device_custom_name = device_custom_name;
+    global_config_data.device_custom_hostname = device_custom_hostname;
     global_config_data.destination_address = destination_address;
     global_config_data.auth_user = auth_user;
     global_config_data.auth_password = auth_password;
     global_config_data.interval = interval;
+    global_config_data.co2_ppm_high = co2_ppm_high;
+    global_config_data.co2_ppm_medium = co2_ppm_medium;
+    global_config_data.co2_ppm_low = co2_ppm_low;
+    global_config_data.rh_high = rh_high;
+    global_config_data.rh_medium = rh_medium;
+    global_config_data.rh_low = rh_low;
 
     return true;
 }
@@ -91,11 +103,17 @@ static bool saveConfig() {
     // write variables to JSON file
     doc["wifi_id"] = global_config_data.wifi_ssid;
     doc["wifi_pw"] = global_config_data.wifi_password;
-    doc["name"] = global_config_data.device_custom_name;
+    doc["hostname"] = global_config_data.device_custom_hostname;
     doc["destination"] = global_config_data.destination_address;
     doc["auth_user"] = global_config_data.auth_user;
     doc["auth_pw"] = global_config_data.auth_password;
     doc["interval"] = global_config_data.interval;
+    doc["co2_ppm_high"] = global_config_data.co2_ppm_high;
+    doc["co2_ppm_medium"] = global_config_data.co2_ppm_medium;
+    doc["co2_ppm_low"] = global_config_data.co2_ppm_low;
+    doc["rh_high"] = global_config_data.rh_high;
+    doc["rh_medium"] = global_config_data.rh_medium;
+    doc["rh_low"] = global_config_data.rh_low ;
 
     // write config file
     String tmp = "";

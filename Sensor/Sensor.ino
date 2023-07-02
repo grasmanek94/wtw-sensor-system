@@ -89,7 +89,7 @@ void sht31_measure() {
 
 #endif
 
-void initWiFi() {
+void init_wifi() {
     WiFi.persistent(false);
     WiFi.disconnect();
     WiFi.mode(WIFI_STA);
@@ -117,7 +117,7 @@ void setup() {
 #endif
 
     if (littlefs_read_config()) {
-        initWiFi();
+        init_wifi();
     }
 
     if (global_config_data.interval < 1) {

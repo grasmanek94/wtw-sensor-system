@@ -1,7 +1,7 @@
 {
   "wifi_id": "SSID_NAME",
   "wifi_pw": "12345678",
-  "name": "Coordinator",
+  "hostname": "sensor-coordinator",
   "destination": "nrg-itho-b450.fritz.box",
   "auth_user": "USERNAME",
   "auth_pw": "PASSWORD",

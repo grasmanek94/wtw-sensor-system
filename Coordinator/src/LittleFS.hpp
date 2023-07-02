@@ -12,11 +12,17 @@
 struct global_config {
     String wifi_ssid;
     String wifi_password;
-    String device_custom_name;
+    String device_custom_hostname;
     String destination_address;
     String auth_user;
     String auth_password;
     int interval;
+    int co2_ppm_high;
+    int co2_ppm_medium;
+    int co2_ppm_low;
+    float rh_high;
+    float rh_medium;
+    float rh_low;
 };
 
 // define filename to store config file
