@@ -48,5 +48,6 @@
     <ClInclude Include="src\HTTPPages.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
+    <ClInclude Include="__vm\.Coordinator.vsarduino.h" />
   </ItemGroup>
 </Project>

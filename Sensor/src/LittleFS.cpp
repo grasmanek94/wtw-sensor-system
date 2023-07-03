@@ -68,7 +68,6 @@ static bool readConfig() {
 
     const String wifi_ssid = doc["wifi_id"];
     const String wifi_password = doc["wifi_pw"];
-    const String device_custom_name = doc["name"];
     const String destination_address = doc["destination"];
     const String auth_user = doc["auth_user"];
     const String auth_password = doc["auth_pw"];
@@ -76,7 +75,6 @@ static bool readConfig() {
 
     global_config_data.wifi_ssid = wifi_ssid;
     global_config_data.wifi_password = wifi_password;
-    global_config_data.device_custom_name = device_custom_name;
     global_config_data.destination_address = destination_address;
     global_config_data.auth_user = auth_user;
     global_config_data.auth_password = auth_password;
@@ -91,7 +89,6 @@ static bool saveConfig() {
     // write variables to JSON file
     doc["wifi_id"] = global_config_data.wifi_ssid;
     doc["wifi_pw"] = global_config_data.wifi_password;
-    doc["name"] = global_config_data.device_custom_name;
     doc["destination"] = global_config_data.destination_address;
     doc["auth_user"] = global_config_data.auth_user;
     doc["auth_pw"] = global_config_data.auth_password;

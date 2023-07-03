@@ -23,6 +23,11 @@ struct global_config {
     float rh_high;
     float rh_medium;
     float rh_low;
+    String static_ip;
+    String gateway_ip;
+    String subnet;
+    String primary_dns;
+    String secondary_dns;
 };
 
 // define filename to store config file

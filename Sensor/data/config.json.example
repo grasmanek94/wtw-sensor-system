@@ -1,7 +1,7 @@
 {
   "wifi_id": "SSID_NAME",
   "wifi_pw": "12345678",
-  "destination": "sensor-coordinator.fritz.box",
+  "destination": "192.168.2.216",
   "auth_user": "USERNAME",
   "auth_pw": "PASSWORD",
   "interval": "15"

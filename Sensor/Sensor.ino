@@ -113,25 +113,34 @@ void sht31_measure() {
 }
 
 void init_wifi() {
-    WiFi.persistent(false);
-    WiFi.disconnect();
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(global_config_data.wifi_ssid, global_config_data.wifi_password);
-    Serial.print("Connecting to WiFi '");
-    Serial.print(global_config_data.wifi_ssid);
-    Serial.print("' ..");
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print('.');
-        delay(1000);
-    }
-    Serial.println(WiFi.localIP());
 
     String mac = WiFi.macAddress();
     mac.replace(":", "");
 
-    Serial.println("sensor-" + mac);
+    Serial.println("sr-" + mac + ".local");
 
-    if (!MDNS.begin("sensor-" + mac)) {
+    WiFi.persistent(false);
+    WiFi.disconnect();
+
+    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+    WiFi.mode(WIFI_MODE_NULL);
+    WiFi.setHostname(mac.c_str());
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(global_config_data.wifi_ssid, global_config_data.wifi_password);
+
+    Serial.print("Connecting to WiFi '");
+    Serial.print(global_config_data.wifi_ssid);
+    Serial.print("' ..");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        Serial.print('.');
+        delay(1000);
+    }
+
+    Serial.println(WiFi.localIP());
+
+    if (!MDNS.begin("sr-" + mac + ".local")) {
         Serial.println("Error setting up MDNS responder!");
     }
 }

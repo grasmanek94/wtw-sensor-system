@@ -9,7 +9,7 @@
      https://github.com/lorol/arduino-esp32littlefs-plugin */
 
 global_config global_config_data;
-const size_t max_document_len = 768;
+const size_t max_document_len = 1024;
 
 static void writeFile(String filename, String message) {
     File file = LittleFS.open(filename, "w");
@@ -79,6 +79,11 @@ static bool readConfig() {
     const float rh_high = doc["rh_high"];
     const float rh_medium = doc["rh_medium"];
     const float rh_low = doc["rh_low"];
+    const String static_ip = doc["static_ip"];
+    const String gateway_ip = doc["gateway_ip"];
+    const String subnet = doc["subnet"];
+    const String primary_dns = doc["primary_dns"];
+    const String secondary_dns = doc["secondary_dns"];
 
     global_config_data.wifi_ssid = wifi_ssid;
     global_config_data.wifi_password = wifi_password;
@@ -93,6 +98,11 @@ static bool readConfig() {
     global_config_data.rh_high = rh_high;
     global_config_data.rh_medium = rh_medium;
     global_config_data.rh_low = rh_low;
+    global_config_data.static_ip = static_ip;
+    global_config_data.gateway_ip = gateway_ip;
+    global_config_data.subnet = subnet;
+    global_config_data.primary_dns = primary_dns;
+    global_config_data.secondary_dns = secondary_dns;
 
     return true;
 }
@@ -114,6 +124,11 @@ static bool saveConfig() {
     doc["rh_high"] = global_config_data.rh_high;
     doc["rh_medium"] = global_config_data.rh_medium;
     doc["rh_low"] = global_config_data.rh_low ;
+    doc["static_ip"] = global_config_data.static_ip;
+    doc["gateway_ip"] = global_config_data.gateway_ip;
+    doc["subnet"] = global_config_data.subnet;
+    doc["primary_dns"] = global_config_data.primary_dns;
+    doc["secondary_dns"] = global_config_data.secondary_dns;
 
     // write config file
     String tmp = "";

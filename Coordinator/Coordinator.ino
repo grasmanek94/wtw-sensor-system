@@ -12,6 +12,46 @@
 
 AsyncWebServer server(80);
 
+bool use_static_ip = false;
+IPAddress static_ip(INADDR_NONE);
+IPAddress static_gateway_ip(INADDR_NONE);
+IPAddress static_subnet(INADDR_NONE);
+IPAddress static_primary_dns(INADDR_NONE);
+IPAddress static_secondary_dns(INADDR_NONE);
+
+void setup_static_ip() {
+    if (global_config_data.static_ip.length() > 0) {
+        Serial.println("Using static_ip...");
+        use_static_ip = true;
+
+        if (!static_ip.fromString(global_config_data.static_ip)) {
+            static_ip = INADDR_NONE;
+            use_static_ip = false;
+            Serial.println("WARN: Cannot parse static_ip");
+        }
+
+        if (!static_gateway_ip.fromString(global_config_data.gateway_ip)) {
+            static_gateway_ip = INADDR_NONE;
+            Serial.println("WARN: Cannot parse gateway_ip");
+        }
+
+        if (!static_subnet.fromString(global_config_data.subnet)) {
+            static_subnet = INADDR_NONE;
+            Serial.println("WARN: Cannot parse subnet");
+        }
+
+        if (!static_primary_dns.fromString(global_config_data.primary_dns)) {
+            static_primary_dns = INADDR_NONE;
+            Serial.println("WARN: Cannot parse primary_dns");
+        }
+
+        if (!static_secondary_dns.fromString(global_config_data.secondary_dns)) {
+            static_secondary_dns = INADDR_NONE;
+            Serial.println("WARN: Cannot parse secondary_dns");
+        }
+    }
+}
+
 void init_wifi() {
     Serial.print("Hostname: ");
     Serial.println(global_config_data.device_custom_hostname);
@@ -19,7 +59,13 @@ void init_wifi() {
     WiFi.persistent(false);
     WiFi.disconnect();
 
-    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+    if (use_static_ip) {
+        WiFi.config(static_ip, static_gateway_ip, static_subnet, static_primary_dns, static_secondary_dns);
+    }
+    else {
+        WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+    }
+
     WiFi.mode(WIFI_MODE_NULL);
     WiFi.setHostname(global_config_data.device_custom_hostname.c_str());
 
@@ -47,6 +93,7 @@ void setup() {
 	Serial.println(F("Starting..."));
 
     if (littlefs_read_config()) {
+        setup_static_ip();
         init_wifi();
 
         server.on("/get/devices", HTTP_GET, http_page_devices);
