@@ -55,7 +55,7 @@ struct device_data {
             if (container[i].relative_time > avg.relative_time) {
                 avg.relative_time = container[i].relative_time;
             }
-            avg.state_at_this_time = get_highest_ventilation_state(avg.state_at_this_time, avg.state_at_this_time);
+            avg.state_at_this_time = get_highest_ventilation_state(container[i].state_at_this_time, avg.state_at_this_time);
         }
 
         avg.co2_ppm /= size;

@@ -153,18 +153,12 @@ void http_page_very_short_data(AsyncWebServerRequest* request) {
     }
 
     String data;
-    Serial.print("Data len: ");
-    Serial.println(input_data.size());
-
     for (int i = 0; i < input_data.size(); ++i) {
-
         if (i == 0) {
             data += input_data[i].getHeaders();
-            Serial.print(input_data[i].getHeaders());
         }
 
         data += input_data[i].toString();
-        Serial.print(input_data[i].toString());
     }
     
     request->send(HTTP_OK, "text/plain", data);
