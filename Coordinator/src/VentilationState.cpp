@@ -85,6 +85,7 @@ void check_measurements() {
 
     if (now > next_measurements_send_time) {
         next_measurements_send_time = now + (global_config_data.interval * 1000);
+
         requested_ventilation_state new_state = get_highest_ventilation_state();
         if (old_ventilation_state != new_state) {
             if (send_ventilation_status()) {
