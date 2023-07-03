@@ -16,9 +16,36 @@
     <ClCompile Include="src\LittleFS.cpp">
       <Filter>Misc Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\DeviceData.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VentilationState.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WiFiReconnect.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HTTPPages.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\LittleFS.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DeviceData.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RingBuf.h">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VentilationState.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WiFiReconnect.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\HTTPPages.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
   </ItemGroup>

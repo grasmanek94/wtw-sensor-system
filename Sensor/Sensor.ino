@@ -1,14 +1,20 @@
-#define CO2_SENSOR_ENABLED
-//#define RH_SENSOR_ENABLED
+#include <UrlEncode.h>
 
 #include <ArduinoJson.h>
+#include <ESPmDNS.h>
 #include <HardwareSerial.h>
 #include <HTTPClient.h>
 #include <WiFi.h>
+
 #include <LittleFS.h>
-#include "FS.h"
+#include <FS.h>
+#include <lwip/dns.h>
 
 #include "src/LittleFS.hpp"
+
+#define CO2_SENSOR_ENABLED
+//#define RH_SENSOR_ENABLED
+
 
 #ifdef CO2_SENSOR_ENABLED
 #include <MHZ19.h>
@@ -17,23 +23,30 @@ MHZ19 mhz;
 
 const unsigned long co2_ppm_meassurement_elapsed_millis = 1000;
 unsigned long last_co2_measurement_time = 0;
+#endif
+
 int last_measured_co2_ppm = 0;
 float last_measured_temp = -273.15f;
 
 void mhz19_setup() {
+#ifdef CO2_SENSOR_ENABLED
     ss.begin(9600);
     mhz.begin(ss);
     mhz.autoCalibration(false);
+#endif
 }
 
 void mhz19_print_measurement() {
+#ifdef CO2_SENSOR_ENABLED
     Serial.print(F("CO2: "));
     Serial.println(last_measured_co2_ppm);
     Serial.print(F("Temperature: "));
     Serial.println(last_measured_temp);
+#endif
 }
 
 void mhz19_measure() {
+#ifdef CO2_SENSOR_ENABLED
     unsigned long now = millis();
     unsigned long elapsed = now - last_co2_measurement_time;
 
@@ -42,9 +55,8 @@ void mhz19_measure() {
         last_measured_co2_ppm = mhz.getCO2();
         last_measured_temp = mhz.getTemperature();
     }
-}
-
 #endif
+}
 
 #ifdef RH_SENSOR_ENABLED
 #include "Wire.h"
@@ -55,9 +67,13 @@ void mhz19_measure() {
 #define I2C_SCL 22
 
 SHT31 sht31;
+
+#endif
+
 float last_measured_rh_value = 0.0f;
 
 void sht31_setup() {
+#ifdef RH_SENSOR_ENABLED
     Wire.begin(I2C_SDA, I2C_SCL);
     sht31.begin(SHT31_ADDRESS);
     Wire.setClock(100000);
@@ -67,27 +83,34 @@ void sht31_setup() {
     Serial.println();
 
     sht31.requestData();
+#endif
 }
 
 void sht31_print_measurement() {
+#ifdef RH_SENSOR_ENABLED
     Serial.print(F("Relative Humidity: "));
     Serial.println(last_measured_rh_value);
+    Serial.print(F("Temperature: "));
+    Serial.println(last_measured_temp);
+#endif
 }
 
 void sht31_measure() {
+#ifdef RH_SENSOR_ENABLED
     if (sht31.dataReady())
     {
         bool success = sht31.readData();   
-        sht31.requestData();
 
-        if (success == false)
+        if (success)
         {
             last_measured_rh_value = sht31.getHumidity();
+            last_measured_temp = sht31.getTemperature();
         }
-    }
-}
 
+        sht31.requestData();
+    }
 #endif
+}
 
 void init_wifi() {
     WiFi.persistent(false);
@@ -102,19 +125,24 @@ void init_wifi() {
         delay(1000);
     }
     Serial.println(WiFi.localIP());
+
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    mac.substring(mac.length() - 6 - 1);
+
+    Serial.println("sensor-" + mac);
+
+    if (!MDNS.begin("sensor-" + mac)) {
+        Serial.println("Error setting up MDNS responder!");
+    }
 }
 
 void setup() {
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
 
-#ifdef CO2_SENSOR_ENABLED
     mhz19_setup();
-#endif
-
-#ifdef RH_SENSOR_ENABLED
     sht31_setup();
-#endif
 
     if (littlefs_read_config()) {
         init_wifi();
@@ -126,67 +154,54 @@ void setup() {
 }
 
 void perform_measurements() {
-#ifdef CO2_SENSOR_ENABLED
     mhz19_measure();
-#endif
-
-#ifdef RH_SENSOR_ENABLED
     sht31_measure();
-#endif
 }
 
 void print_measurements() {
     if (!Serial)
         return;
 
-#ifdef CO2_SENSOR_ENABLED
     mhz19_print_measurement();
-#endif
-
-#ifdef RH_SENSOR_ENABLED
     sht31_print_measurement();
-#endif
 }
 
 void send_measurements() {
-    if (WiFi.status() == WL_CONNECTED) {
-        HTTPClient http;
-        http.begin(global_config_data.destination_address);
-        http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
-        http.setTimeout(5);
-
-        int co2_ppm = 0;
-        float rel_hum_perc = 0.0f;
-
-#ifdef CO2_SENSOR_ENABLED
-        co2_ppm = last_measured_co2_ppm;
-#endif
-#ifdef RH_SENSOR_ENABLED
-        rel_hum_perc = last_measured_rh_value;
-#endif
-
-        int httpResponseCode = http.POST(
-            "deviceId=" + WiFi.macAddress() + 
-            "&co2=" + co2_ppm +
-            "&rh=" + rel_hum_perc + 
-            "&deviceName=" + global_config_data.device_custom_name
-        );
-
+    if (WiFi.status() != WL_CONNECTED) {
         if (Serial) {
-            if (httpResponseCode > 0) {
-                Serial.print("HTTP Response code: ");
-                Serial.println(httpResponseCode);
-                String payload = http.getString();
-                Serial.println(payload);
-            }
-            else {
-                Serial.print("Error code: ");
-                Serial.println(httpResponseCode);
-            }
+            Serial.print("send_measurements: WiFi not connected");
         }
-
-        http.end();
+        return;
     }
+
+    HTTPClient http;
+    
+    String params = "?deviceId=" + urlEncode(WiFi.macAddress()) +
+        "&co2=" + last_measured_co2_ppm +
+        "&rh=" + last_measured_rh_value +
+        "&temp=" + last_measured_temp +
+        "&deviceName=" + urlEncode(global_config_data.device_custom_name);
+    
+    http.begin("http://" + global_config_data.destination_address + "/update" + params);
+    http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
+    http.setTimeout(20);
+
+    int httpResponseCode = http.POST("");
+
+    if (Serial) {
+        if (httpResponseCode > 0) {
+            Serial.print("HTTP Response code: ");
+            Serial.println(httpResponseCode);
+            String payload = http.getString();
+            Serial.println(payload);
+        }
+        else {
+            Serial.print("Error code: ");
+            Serial.println(httpResponseCode);
+        }
+    }
+
+    http.end();
 }
 
 const unsigned long max_wifi_timeout_until_reconnect = 15000;
