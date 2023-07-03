@@ -12,7 +12,6 @@
 struct global_config {
     String wifi_ssid;
     String wifi_password;
-    String device_custom_name;
     String destination_address;
     String auth_user;
     String auth_password;

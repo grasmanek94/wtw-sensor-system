@@ -1,7 +1,6 @@
 {
   "wifi_id": "SSID_NAME",
   "wifi_pw": "12345678",
-  "name": "Living Room",
   "destination": "sensor-coordinator.fritz.box",
   "auth_user": "USERNAME",
   "auth_pw": "PASSWORD",

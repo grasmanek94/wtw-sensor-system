@@ -128,7 +128,6 @@ void init_wifi() {
 
     String mac = WiFi.macAddress();
     mac.replace(":", "");
-    mac.substring(mac.length() - 6 - 1);
 
     Serial.println("sensor-" + mac);
 
@@ -179,8 +178,7 @@ void send_measurements() {
     String params = "?deviceId=" + urlEncode(WiFi.macAddress()) +
         "&co2=" + last_measured_co2_ppm +
         "&rh=" + last_measured_rh_value +
-        "&temp=" + last_measured_temp +
-        "&deviceName=" + urlEncode(global_config_data.device_custom_name);
+        "&temp=" + last_measured_temp;
     
     http.begin("http://" + global_config_data.destination_address + "/update" + params);
     http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());

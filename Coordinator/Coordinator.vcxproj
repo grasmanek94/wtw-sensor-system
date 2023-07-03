@@ -152,7 +152,7 @@
   <ImportGroup Label="ExtensionTargets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties arduino.upload.port="COM5" config.Debug.customdebug_esp32_esp32wrover_debugger_type="hwdebugger" custom_esp32_esp32wrover_DebugLevel="none" custom_esp32_esp32wrover_vm.programmer_name="" custom_esp32_esp32wrover_vm.upload.useprogrammer="0" />
+      <UserProperties arduino.upload.port="COM6" config.Debug.customdebug_esp32_esp32wrover_debugger_type="hwdebugger" custom_esp32_esp32wrover_DebugLevel="none" custom_esp32_esp32wrover_vm.programmer_name="" custom_esp32_esp32wrover_vm.upload.useprogrammer="0" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>
