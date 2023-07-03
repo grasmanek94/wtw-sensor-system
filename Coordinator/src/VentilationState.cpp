@@ -37,9 +37,9 @@ bool send_ventilation_status() {
 
     HTTPClient http;
     String URL = "http://" + global_config_data.destination_address + "/api.html"
-        //"?username=" + urlEncode(global_config_data.auth_user) +
-        //"&password=" + urlEncode(global_config_data.auth_password) +
-        "?command=";
+        "?username=" + urlEncode(global_config_data.auth_user) +
+        "&password=" + urlEncode(global_config_data.auth_password) +
+        "&command=";
 
     switch (get_highest_ventilation_state()) {
     case requested_ventilation_state_high:
@@ -56,7 +56,7 @@ bool send_ventilation_status() {
     }
 
     http.begin(URL);
-    http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
+    //http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
     http.setTimeout(max_ventilation_status_http_request_timeout_s);
 
     int httpResponseCode = http.GET();
