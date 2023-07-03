@@ -141,7 +141,7 @@ void http_page_very_short_data(AsyncWebServerRequest* request) {
     }
 
     int device_index = get_device_index(request);
-    if (device_index != INVALID_DEVICE_ID) {
+    if (device_index == INVALID_DEVICE_ID) {
         return request->send(HTTP_BAD_REQUEST, "text/plain");
     }
 
@@ -195,7 +195,7 @@ void http_page_short_data(AsyncWebServerRequest* request) {
     }
 
     int device_index = get_device_index(request);
-    if (device_index != INVALID_DEVICE_ID) {
+    if (device_index == INVALID_DEVICE_ID) {
         return request->send(HTTP_BAD_REQUEST, "text/plain");
     }
 
@@ -225,7 +225,7 @@ void http_page_long_data(AsyncWebServerRequest* request) {
     }
 
     int device_index = get_device_index(request);
-    if (device_index != INVALID_DEVICE_ID) {
+    if (device_index == INVALID_DEVICE_ID) {
         return request->send(HTTP_BAD_REQUEST, "text/plain");
     }
 
