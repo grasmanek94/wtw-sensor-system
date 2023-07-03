@@ -8,7 +8,7 @@ enum requested_ventilation_state {
 };
 
 extern requested_ventilation_state old_ventilation_state;
-const unsigned long max_ventilation_status_http_request_timeout_s = 5;
+const unsigned long max_ventilation_status_http_request_timeout_s = 60;
 
 requested_ventilation_state get_highest_ventilation_state();
 void check_measurements();
