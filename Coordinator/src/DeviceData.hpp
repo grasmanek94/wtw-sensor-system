@@ -17,6 +17,7 @@ struct measurement_entry {
     int co2_ppm;
     float rh;
     float temp_c;
+    unsigned char sensor_status;
     requested_ventilation_state state_at_this_time;
 
     String toString() const;
@@ -44,17 +45,20 @@ struct device_data {
         avg.co2_ppm = 0;
         avg.rh = 0.0f;
         avg.temp_c = 0.0f;
+        avg.sensor_status = 0;
 
         avg.state_at_this_time = requested_ventilation_state_low;
         for (int i = 0; i < size; ++i) {
             avg.co2_ppm += container[i].co2_ppm;
             avg.rh += container[i].rh;
             avg.temp_c += container[i].temp_c;
+            avg.sensor_status |= container[i].sensor_status;
 
             // newest time = time of all averages
             if (container[i].relative_time > avg.relative_time) {
                 avg.relative_time = container[i].relative_time;
             }
+
             avg.state_at_this_time = get_highest_ventilation_state(container[i].state_at_this_time, avg.state_at_this_time);
         }
 
@@ -100,7 +104,7 @@ struct device_data {
         return requested_ventilation_state_low;
     }
 
-    void push(int co2_ppm, float rh, float temp_c);
+    void push(int co2_ppm, float rh, float temp_c, unsigned char sensor_status);
 
     bool is_associated() const;
     void associate(String identifier);

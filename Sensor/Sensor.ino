@@ -12,40 +12,88 @@
 
 #include "src/LittleFS.hpp"
 
-#define CO2_SENSOR_ENABLED
 //#define RH_SENSOR_ENABLED
+//#define CO2_SENSOR_ENABLED
+#define BETTER_CO2_SENSOR_ENABLED
+#ifdef BETTER_CO2_SENSOR_ENABLED
+#undef CO2_SENSOR_ENABLED
+#endif
 
+
+//////////////////////////////////////////////////////////////
 
 #ifdef CO2_SENSOR_ENABLED
 #include <MHZ19.h>
-HardwareSerial ss(2);
 MHZ19 mhz;
+#elif defined(BETTER_CO2_SENSOR_ENABLED)
+#include <s8_uart.h>
 
-const unsigned long co2_ppm_meassurement_elapsed_millis = 1000;
+S8_UART* sensor_S8;
+S8_sensor sensor_S8_data;
+#endif
+
+#if defined(CO2_SENSOR_ENABLED) || defined(BETTER_CO2_SENSOR_ENABLED)
+HardwareSerial ss(2);
+
+const unsigned long co2_ppm_meassurement_elapsed_millis = 4000;
 unsigned long last_co2_measurement_time = 0;
 #endif
 
 int last_measured_co2_ppm = 0;
 float last_measured_temp = -273.15f;
+unsigned char meter_status = 0;
 
-void mhz19_setup() {
+void co2_sensor_setup() {
 #ifdef CO2_SENSOR_ENABLED
     ss.begin(9600);
     mhz.begin(ss);
     mhz.autoCalibration(false);
+#elif defined(BETTER_CO2_SENSOR_ENABLED)
+    // Initialize S8 sensor
+    ss.begin(S8_BAUDRATE);
+    sensor_S8 = new S8_UART(ss);
+
+    // Check if S8 is available
+    sensor_S8->get_firmware_version(sensor_S8_data.firm_version);
+    int len = strlen(sensor_S8_data.firm_version);
+    if (len == 0) {
+        Serial.println("SenseAir S8 CO2 sensor not found!");
+        return;
+    }
+
+    // Show basic S8 sensor info
+    Serial.println(">>> SenseAir S8 NDIR CO2 sensor <<<");
+    printf("Firmware version: %s\n", sensor_S8_data.firm_version);
+    sensor_S8_data.sensor_type_id = sensor_S8->get_sensor_type_ID();
+    Serial.print("Sensor type: 0x"); printIntToHex(sensor_S8_data.sensor_type_id, 3); Serial.println("");
+
+    // Setting ABC period
+    Serial.println("Setting ABC period set to 180 hours...");
+    sensor_S8->set_ABC_period(180);
+    delay(1000);
+    sensor_S8_data.abc_period = sensor_S8->get_ABC_period();
+    if (sensor_S8_data.abc_period == 180) {
+        Serial.println("ABC period set succesfully");
+    }
+    else {
+        Serial.println("Error: ABC period doesn't set!");
+    }
 #endif
 }
 
-void mhz19_print_measurement() {
+void co2_sensor_print_measurement() {
 #ifdef CO2_SENSOR_ENABLED
     Serial.print(F("CO2: "));
     Serial.println(last_measured_co2_ppm);
     Serial.print(F("Temperature: "));
     Serial.println(last_measured_temp);
+#elif defined(BETTER_CO2_SENSOR_ENABLED)
+    Serial.print(F("CO2: "));
+    Serial.println(last_measured_co2_ppm);
 #endif
 }
 
-void mhz19_measure() {
+void co2_sensor_measure() {
 #ifdef CO2_SENSOR_ENABLED
     unsigned long now = millis();
     unsigned long elapsed = now - last_co2_measurement_time;
@@ -55,8 +103,55 @@ void mhz19_measure() {
         last_measured_co2_ppm = mhz.getCO2();
         last_measured_temp = mhz.getTemperature();
     }
+#elif defined(BETTER_CO2_SENSOR_ENABLED)
+    unsigned long now = millis();
+    unsigned long elapsed = now - last_co2_measurement_time;
+
+    if (elapsed > co2_ppm_meassurement_elapsed_millis) {
+        last_co2_measurement_time = now;
+
+        sensor_S8_data.co2 = sensor_S8->get_co2();
+        last_measured_co2_ppm = sensor_S8_data.co2;
+
+        sensor_S8_data.meter_status = sensor_S8->get_meter_status();
+        meter_status = sensor_S8_data.meter_status;
+
+        if (meter_status & S8_MASK_METER_ANY_ERROR) {
+            Serial.println("One or more errors detected!");
+
+            if (meter_status & S8_MASK_METER_FATAL_ERROR) {
+                Serial.println("Fatal error in sensor!");
+            }
+
+            if (meter_status & S8_MASK_METER_OFFSET_REGULATION_ERROR) {
+                Serial.println("Offset regulation error in sensor!");
+            }
+
+            if (meter_status & S8_MASK_METER_ALGORITHM_ERROR) {
+                Serial.println("Algorithm error in sensor!");
+            }
+
+            if (meter_status & S8_MASK_METER_OUTPUT_ERROR) {
+                Serial.println("Output error in sensor!");
+            }
+
+            if (meter_status & S8_MASK_METER_SELF_DIAG_ERROR) {
+                Serial.println("Self diagnostics error in sensor!");
+            }
+
+            if (meter_status & S8_MASK_METER_OUT_OF_RANGE) {
+                Serial.println("Out of range in sensor!");
+            }
+
+            if (meter_status & S8_MASK_METER_MEMORY_ERROR) {
+                Serial.println("Memory error in sensor!");
+            }
+        }
+    }
 #endif
 }
+
+//////////////////////////////////////////////////////////////
 
 #ifdef RH_SENSOR_ENABLED
 #include "Wire.h"
@@ -112,6 +207,8 @@ void sht31_measure() {
 #endif
 }
 
+//////////////////////////////////////////////////////////////
+
 void init_wifi() {
 
     String mac = WiFi.macAddress();
@@ -149,7 +246,7 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
 
-    mhz19_setup();
+    co2_sensor_setup();
     sht31_setup();
 
     if (littlefs_read_config()) {
@@ -162,7 +259,7 @@ void setup() {
 }
 
 void perform_measurements() {
-    mhz19_measure();
+    co2_sensor_measure();
     sht31_measure();
 }
 
@@ -170,7 +267,7 @@ void print_measurements() {
     if (!Serial)
         return;
 
-    mhz19_print_measurement();
+    co2_sensor_print_measurement();
     sht31_print_measurement();
 }
 
@@ -187,7 +284,8 @@ void send_measurements() {
     String params = "?deviceId=" + urlEncode(WiFi.macAddress()) +
         "&co2=" + last_measured_co2_ppm +
         "&rh=" + last_measured_rh_value +
-        "&temp=" + last_measured_temp;
+        "&temp=" + last_measured_temp +
+        "&status=" + sensor_S8_data.meter_status;
     
     http.begin("http://" + global_config_data.destination_address + "/update" + params);
     http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
