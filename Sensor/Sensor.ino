@@ -37,6 +37,8 @@ HardwareSerial ss(2);
 
 const unsigned long co2_ppm_meassurement_elapsed_millis = 4000;
 unsigned long last_co2_measurement_time = 0;
+const unsigned long co2_perform_manual_calibration_after_ms = 20 * 60 * 1000; // 20 min
+bool manual_calibration_failure = false;
 #endif
 
 int last_measured_co2_ppm = 0;
@@ -78,6 +80,10 @@ void co2_sensor_setup() {
     else {
         Serial.println("Error: ABC period doesn't set!");
     }
+
+    if (!global_config_data.manual_calibration_performed) {
+        last_measured_temp = -1.0f; // temporarily abuse this value because S8 doesn't have temp sensor readout
+    }
 #endif
 }
 
@@ -106,6 +112,31 @@ void co2_sensor_measure() {
 #elif defined(BETTER_CO2_SENSOR_ENABLED)
     unsigned long now = millis();
     unsigned long elapsed = now - last_co2_measurement_time;
+
+    if (!global_config_data.manual_calibration_performed && !manual_calibration_failure) {
+        if (now > co2_perform_manual_calibration_after_ms) {
+            Serial.println("Performing calibration..");
+            global_config_data.manual_calibration_performed = sensor_S8->manual_calibration();
+
+            if (global_config_data.manual_calibration_performed) {
+                littlefs_write_config();
+                littlefs_read_config();
+                if (!global_config_data.manual_calibration_performed) {
+                    Serial.println("Cannot save calibration result!");
+                    last_measured_temp = -200.0f;
+                }
+                else {    
+                    last_measured_temp = -273.15f;
+                    Serial.println("Calibration success!");
+                }
+            }
+            else {
+                last_measured_temp = -100.0f;
+                manual_calibration_failure = true;
+                Serial.println("Calibration failure!");
+            }
+        }
+    }
 
     if (elapsed > co2_ppm_meassurement_elapsed_millis) {
         last_co2_measurement_time = now;
@@ -246,11 +277,13 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
 
-    co2_sensor_setup();
-    sht31_setup();
-
     if (littlefs_read_config()) {
         init_wifi();
+        co2_sensor_setup();
+        sht31_setup();
+    }
+    else {
+        while (true) { delay(1000); }
     }
 
     if (global_config_data.interval < 1) {
@@ -285,7 +318,7 @@ void send_measurements() {
         "&co2=" + last_measured_co2_ppm +
         "&rh=" + last_measured_rh_value +
         "&temp=" + last_measured_temp +
-        "&status=" + sensor_S8_data.meter_status;
+        "&status=" + meter_status;
     
     http.begin("http://" + global_config_data.destination_address + "/update" + params);
     http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());

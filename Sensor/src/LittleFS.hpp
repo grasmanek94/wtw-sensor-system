@@ -16,6 +16,7 @@ struct global_config {
     String auth_user;
     String auth_password;
     int interval;
+    int manual_calibration_performed;
 };
 
 // define filename to store config file
@@ -23,3 +24,4 @@ const String global_config_filename = "/config.json";
 
 extern global_config global_config_data;
 bool littlefs_read_config();
+void littlefs_write_config();

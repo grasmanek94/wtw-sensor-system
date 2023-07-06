@@ -41,6 +41,8 @@ static String readFile(String filename) {
     while (file.available()) {
         fileText += file.readString();
     }
+
+    //Serial.println(fileText);
     file.close();
     Serial.println(file.size());
     return fileText;
@@ -72,6 +74,7 @@ static bool readConfig() {
     const String auth_user = doc["auth_user"];
     const String auth_password = doc["auth_pw"];
     const int interval = doc["interval"];
+    const int manual_calibration_performed = doc["manual_calibration_performed"];
 
     global_config_data.wifi_ssid = wifi_ssid;
     global_config_data.wifi_password = wifi_password;
@@ -79,6 +82,7 @@ static bool readConfig() {
     global_config_data.auth_user = auth_user;
     global_config_data.auth_password = auth_password;
     global_config_data.interval = interval;
+    global_config_data.manual_calibration_performed = manual_calibration_performed;
 
     return true;
 }
@@ -93,6 +97,7 @@ static bool saveConfig() {
     doc["auth_user"] = global_config_data.auth_user;
     doc["auth_pw"] = global_config_data.auth_password;
     doc["interval"] = global_config_data.interval;
+    doc["manual_calibration_performed"] = global_config_data.manual_calibration_performed;
 
     // write config file
     String tmp = "";
@@ -130,4 +135,8 @@ bool littlefs_read_config() {
     }
 
     return false;
+}
+
+void littlefs_write_config() {
+    saveConfig();
 }
