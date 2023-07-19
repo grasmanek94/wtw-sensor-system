@@ -17,7 +17,7 @@ struct measurement_entry {
     int co2_ppm;
     float rh;
     float temp_c;
-    unsigned char sensor_status;
+    int sensor_status;
     requested_ventilation_state state_at_this_time;
 
     String toString() const;
@@ -104,7 +104,7 @@ struct device_data {
         return requested_ventilation_state_low;
     }
 
-    void push(int co2_ppm, float rh, float temp_c, unsigned char sensor_status);
+    void push(int co2_ppm, float rh, float temp_c, int sensor_status);
 
     bool is_associated() const;
     void associate(String identifier);

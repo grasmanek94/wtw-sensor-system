@@ -21,7 +21,7 @@ device_data::device_data() :
     _tmp_avg{ 0, 0, 0.0f, 0.0f }
 {}
 
-void device_data::push(int co2_ppm, float rh, float temp_c, unsigned char sensor_status) {
+void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status) {
     unsigned long now = (unsigned long)time(NULL);
 
     current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);

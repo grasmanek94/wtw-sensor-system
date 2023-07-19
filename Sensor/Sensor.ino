@@ -1,315 +1,130 @@
-#include <Adafruit_SHT4x.h>
-#include <UrlEncode.h>
-
-#include <ArduinoJson.h>
-#include <ESPmDNS.h>
-#include <HardwareSerial.h>
+#include <ESPAsyncWebSrv.h>
 #include <HTTPClient.h>
+#include <UrlEncode.h>
 #include <WiFi.h>
 
-#include <LittleFS.h>
-#include <FS.h>
-#include <lwip/dns.h>
-
+#include "src/HTTPPages.hpp"
 #include "src/LittleFS.hpp"
+#include "src/MyWifi.hpp"
+#include "src/Sensor_S8.hpp"
+#include "src/Sensor_SHT41.hpp"
+//#include "src/Sensor_MZH19.hpp"
+//#include "src/Sensor_SHT31.hpp"
 
-//#define RH_SENSOR_ENABLED
-//#define CO2_SENSOR_ENABLED
-#define BETTER_CO2_SENSOR_ENABLED
-#ifdef BETTER_CO2_SENSOR_ENABLED
-#undef CO2_SENSOR_ENABLED
-#endif
+#define SENSOR_VERSION "1.2"
 
+char* SENSOR_VERSION_STR = SENSOR_VERSION;
+String SENSORS_LIST_STR("");
+AsyncWebServer server(80);
 
-//////////////////////////////////////////////////////////////
-
-#ifdef CO2_SENSOR_ENABLED
-#include <MHZ19.h>
-MHZ19 mhz;
-#elif defined(BETTER_CO2_SENSOR_ENABLED)
-#include <s8_uart.h>
-
-S8_UART* sensor_S8;
-S8_sensor sensor_S8_data;
-#endif
-
-#if defined(CO2_SENSOR_ENABLED) || defined(BETTER_CO2_SENSOR_ENABLED)
-HardwareSerial ss(2);
-
-const unsigned long co2_ppm_meassurement_elapsed_millis = 4000;
-unsigned long last_co2_measurement_time = 0;
-const unsigned long co2_perform_manual_calibration_after_ms = 20 * 60 * 1000; // 20 min
-bool manual_calibration_failure = false;
-#endif
-
-int last_measured_co2_ppm = 0;
-float last_measured_temp = -273.15f;
-unsigned char meter_status = 0;
-
-void co2_sensor_setup() {
-#ifdef CO2_SENSOR_ENABLED
-    ss.begin(9600);
-    mhz.begin(ss);
-    mhz.autoCalibration(false);
-#elif defined(BETTER_CO2_SENSOR_ENABLED)
-    // Initialize S8 sensor
-    ss.begin(S8_BAUDRATE);
-    sensor_S8 = new S8_UART(ss);
-
-    // Check if S8 is available
-    sensor_S8->get_firmware_version(sensor_S8_data.firm_version);
-    int len = strlen(sensor_S8_data.firm_version);
-    if (len == 0) {
-        Serial.println("SenseAir S8 CO2 sensor not found!");
-        return;
-    }
-
-    // Show basic S8 sensor info
-    Serial.println(">>> SenseAir S8 NDIR CO2 sensor <<<");
-    printf("Firmware version: %s\n", sensor_S8_data.firm_version);
-    sensor_S8_data.sensor_type_id = sensor_S8->get_sensor_type_ID();
-    Serial.print("Sensor type: 0x"); printIntToHex(sensor_S8_data.sensor_type_id, 3); Serial.println("");
-
-    // Setting ABC period
-    Serial.println("Setting ABC period set to 180 hours...");
-    sensor_S8->set_ABC_period(180);
-    delay(1000);
-    sensor_S8_data.abc_period = sensor_S8->get_ABC_period();
-    if (sensor_S8_data.abc_period == 180) {
-        Serial.println("ABC period set succesfully");
-    }
-    else {
-        Serial.println("Error: ABC period doesn't set!");
-    }
-
-    if (!global_config_data.manual_calibration_performed) {
-        last_measured_temp = -1.0f; // temporarily abuse this value because S8 doesn't have temp sensor readout
-    }
-#endif
-}
-
-void co2_sensor_print_measurement() {
-#ifdef CO2_SENSOR_ENABLED
-    Serial.print(F("CO2: "));
-    Serial.println(last_measured_co2_ppm);
-    Serial.print(F("Temperature: "));
-    Serial.println(last_measured_temp);
-#elif defined(BETTER_CO2_SENSOR_ENABLED)
-    Serial.print(F("CO2: "));
-    Serial.println(last_measured_co2_ppm);
-#endif
-}
-
-void co2_sensor_measure() {
-#ifdef CO2_SENSOR_ENABLED
-    unsigned long now = millis();
-    unsigned long elapsed = now - last_co2_measurement_time;
-
-    if (elapsed > co2_ppm_meassurement_elapsed_millis) {
-        last_co2_measurement_time = now;
-        last_measured_co2_ppm = mhz.getCO2();
-        last_measured_temp = mhz.getTemperature();
-    }
-#elif defined(BETTER_CO2_SENSOR_ENABLED)
-    unsigned long now = millis();
-    unsigned long elapsed = now - last_co2_measurement_time;
-
-    if (!global_config_data.manual_calibration_performed && !manual_calibration_failure) {
-        if (now > co2_perform_manual_calibration_after_ms) {
-            Serial.println("Performing calibration..");
-            global_config_data.manual_calibration_performed = sensor_S8->manual_calibration();
-
-            if (global_config_data.manual_calibration_performed) {
-                littlefs_write_config();
-                littlefs_read_config();
-                if (!global_config_data.manual_calibration_performed) {
-                    Serial.println("Cannot save calibration result!");
-                    last_measured_temp = -200.0f;
-                }
-                else {    
-                    last_measured_temp = -273.15f;
-                    Serial.println("Calibration success!");
-                }
-            }
-            else {
-                last_measured_temp = -100.0f;
-                manual_calibration_failure = true;
-                Serial.println("Calibration failure!");
-            }
-        }
-    }
-
-    if (elapsed > co2_ppm_meassurement_elapsed_millis) {
-        last_co2_measurement_time = now;
-
-        sensor_S8_data.co2 = sensor_S8->get_co2();
-        last_measured_co2_ppm = sensor_S8_data.co2;
-
-        sensor_S8_data.meter_status = sensor_S8->get_meter_status();
-        meter_status = sensor_S8_data.meter_status;
-
-        if (meter_status & S8_MASK_METER_ANY_ERROR) {
-            Serial.println("One or more errors detected!");
-
-            if (meter_status & S8_MASK_METER_FATAL_ERROR) {
-                Serial.println("Fatal error in sensor!");
-            }
-
-            if (meter_status & S8_MASK_METER_OFFSET_REGULATION_ERROR) {
-                Serial.println("Offset regulation error in sensor!");
-            }
-
-            if (meter_status & S8_MASK_METER_ALGORITHM_ERROR) {
-                Serial.println("Algorithm error in sensor!");
-            }
-
-            if (meter_status & S8_MASK_METER_OUTPUT_ERROR) {
-                Serial.println("Output error in sensor!");
-            }
-
-            if (meter_status & S8_MASK_METER_SELF_DIAG_ERROR) {
-                Serial.println("Self diagnostics error in sensor!");
-            }
-
-            if (meter_status & S8_MASK_METER_OUT_OF_RANGE) {
-                Serial.println("Out of range in sensor!");
-            }
-
-            if (meter_status & S8_MASK_METER_MEMORY_ERROR) {
-                Serial.println("Memory error in sensor!");
-            }
-        }
-    }
-#endif
-}
-
-//////////////////////////////////////////////////////////////
-
-#ifdef RH_SENSOR_ENABLED
-#include "Wire.h"
-#include <SHT31.h>
-
-#define SHT31_ADDRESS   0x44
-#define I2C_SDA 23
-#define I2C_SCL 22
-
-SHT31 sht31;
-
-#endif
-
-float last_measured_rh_value = 0.0f;
-
-void sht31_setup() {
-#ifdef RH_SENSOR_ENABLED
-    Wire.begin(I2C_SDA, I2C_SCL);
-    sht31.begin(SHT31_ADDRESS);
-    Wire.setClock(100000);
-
-    uint16_t stat = sht31.readStatus();
-    Serial.print(stat, HEX);
-    Serial.println();
-
-    sht31.requestData();
-#endif
-}
-
-void sht31_print_measurement() {
-#ifdef RH_SENSOR_ENABLED
-    Serial.print(F("Relative Humidity: "));
-    Serial.println(last_measured_rh_value);
-    Serial.print(F("Temperature: "));
-    Serial.println(last_measured_temp);
-#endif
-}
-
-void sht31_measure() {
-#ifdef RH_SENSOR_ENABLED
-    if (sht31.dataReady())
-    {
-        bool success = sht31.readData();   
-
-        if (success)
-        {
-            last_measured_rh_value = sht31.getHumidity();
-            last_measured_temp = sht31.getTemperature();
-        }
-
-        sht31.requestData();
-    }
-#endif
-}
-
-//////////////////////////////////////////////////////////////
-
-void init_wifi() {
-
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
-
-    Serial.println("sr-" + mac + ".local");
-
-    WiFi.persistent(false);
-    WiFi.disconnect();
-
-    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
-    WiFi.mode(WIFI_MODE_NULL);
-    WiFi.setHostname(mac.c_str());
-
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(global_config_data.wifi_ssid, global_config_data.wifi_password);
-
-    Serial.print("Connecting to WiFi '");
-    Serial.print(global_config_data.wifi_ssid);
-    Serial.print("' ..");
-
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print('.');
-        delay(1000);
-    }
-
-    Serial.println(WiFi.localIP());
-
-    if (!MDNS.begin("sr-" + mac + ".local")) {
-        Serial.println("Error setting up MDNS responder!");
-    }
-}
+Sensor_Interface* sensors[] = {
+    new Sensor_S8()
+    , new Sensor_SHT41()
+    //, new Sensor_SHT31()
+    //, new Sensor_MHZ19()
+};
 
 void setup() {
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
 
-    if (littlefs_read_config()) {
-        init_wifi();
-        co2_sensor_setup();
-        sht31_setup();
+    if (!littlefs_read_config()) {
+        while (true) {
+            Serial.println(F("Stalled"));
+            delay(10000);
+        }
     }
-    else {
-        while (true) { delay(1000); }
+
+    init_wifi();
+    for (auto& sensor : sensors) {
+        sensor->setup();
+        if (SENSORS_LIST_STR.length() > 0) {
+            SENSORS_LIST_STR += "/";
+        }
+        SENSORS_LIST_STR += sensor->get_name();
     }
+
+    server.onNotFound(http_page_not_found);
+    server.on("/", HTTP_GET, http_page_flash);
+    server.on("/", HTTP_POST, http_api_flash, http_api_flash_part);
+
+    server.begin();
+
 
     if (global_config_data.interval < 1) {
         global_config_data.interval = 1;
     }
 }
 
-void perform_measurements() {
-    co2_sensor_measure();
-    sht31_measure();
-}
-
 void print_measurements() {
     if (!Serial)
         return;
 
-    co2_sensor_print_measurement();
-    sht31_print_measurement();
+    for (auto& sensor : sensors) {
+        sensor->print_measurement();
+    }
+}
+
+int last_measured_co2_ppm = -1;
+float last_measured_rh_value = -1.0f;
+float last_measured_temp = -273.15f;
+int meter_status = 0xFF;
+
+void process_sensor_data(Sensor_Interface* sensor) {
+    if (sensor->has_co2_ppm()) {
+        last_measured_co2_ppm = sensor->get_co2_ppm();
+    }
+
+    if (sensor->has_temperature()) {
+        last_measured_temp = sensor->get_temperature();
+    }
+
+    if (sensor->has_relative_humidity()) {
+        last_measured_rh_value = sensor->get_relative_humidity();
+    }
+
+    if (sensor->has_meter_status()) {
+        meter_status = sensor->get_meter_status();
+    }
+
+    if (sensor->get_name() == "S8") { // dynamic_cast unavailable
+        Sensor_S8* sensor_s8 = static_cast<Sensor_S8*>(sensor);
+        if (sensor_s8 != nullptr) {
+            auto calibration_status = sensor_s8->get_calibration_error();
+            if (sensor_s8->get_abc_status() == Sensor_S8::ABC_STATUS::FAIL) {
+                meter_status |= 0x10000000;
+            }
+            switch (calibration_status) {
+            case Sensor_S8::CALIBRATION_STATUS::CALIBRATION_SUCCESS_BUT_FAILED_TO_SAVE_TO_DISK:
+                meter_status |= 0x20000000;
+                break;
+
+            case Sensor_S8::CALIBRATION_STATUS::MANUAL_CALIBRATION_NOT_PERFORMED_YET:
+                meter_status |= 0x40000000;
+                break;
+
+            case Sensor_S8::CALIBRATION_STATUS::SENSOR_CALIBRATION_FAILED:
+                meter_status |= 0x80000000;
+                break;
+            }
+        }
+    }
+}
+
+void perform_measurements() {
+    for (auto& sensor : sensors) {
+        if (sensor->is_present()) {
+            sensor->update();
+            if (sensor->has_new_data()) {
+                process_sensor_data(sensor);
+
+            }
+        }
+    }
 }
 
 void send_measurements() {
-    if (WiFi.status() != WL_CONNECTED) {
-        if (Serial) {
-            Serial.print("send_measurements: WiFi not connected");
-        }
+    if (!is_wifi_connected_debug()) {
         return;
     }
 
@@ -343,29 +158,9 @@ void send_measurements() {
     http.end();
 }
 
-const unsigned long max_wifi_timeout_until_reconnect = 15000;
-unsigned long require_wifi_reconnect_time = 0;
-
-void check_wifi() {
-    unsigned long now = millis();
-
-    bool connected = (WiFi.status() == WL_CONNECTED);
-    bool wifi_reconnect_elapsed = (now > require_wifi_reconnect_time);
-    if (connected || wifi_reconnect_elapsed) {
-        require_wifi_reconnect_time = now + max_wifi_timeout_until_reconnect;
-
-        if (!connected && wifi_reconnect_elapsed) {
-            WiFi.disconnect();
-            WiFi.reconnect();
-        }
-    }
-}
-
-unsigned long next_measurements_send_time = 0;
+static unsigned long next_measurements_send_time = 0;
 
 void check_measurements() {
-    perform_measurements();
-
     unsigned long now = millis();
     
     if (now > next_measurements_send_time) {
@@ -378,5 +173,6 @@ void check_measurements() {
 
 void loop() {
     check_wifi(); 
+    perform_measurements();
     check_measurements();
 }

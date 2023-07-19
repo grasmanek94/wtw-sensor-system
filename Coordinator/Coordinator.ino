@@ -94,45 +94,50 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
 
-    if (littlefs_read_config()) {
-        setup_static_ip();
-        init_wifi();
-
-        server.on("/get/devices", HTTP_GET, http_page_devices);
-        server.on("/get/very_short", HTTP_GET, http_page_very_short_data);
-        server.on("/get/short", HTTP_GET, http_page_short_data);
-        server.on("/get/long", HTTP_GET, http_page_long_data);
-
-        server.on("/update", HTTP_POST, http_api_update);
-        server.onNotFound(http_page_not_found);
-
-        server.on("/heap", HTTP_GET, [](AsyncWebServerRequest* request) {
-            request->send(200, "text/plain", String(ESP.getFreeHeap()));
-        });
-
-        server.on("/now", HTTP_GET, [](AsyncWebServerRequest* request) {
-            request->send(200, "text/plain", String((unsigned long)time(NULL)));
-        });
-
-        server.on("/flash", HTTP_GET, http_page_flash);
-        server.on("/flash", HTTP_POST, http_api_flash, http_api_flash_part);
-
-        server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-            request->send(200, "text/plain", 
-                "/get/devices (index / id)\n"
-                "/get/very_short (index / id)\n"
-                "/get/short (index / id)\n"
-                "/get/long (index / id)\n"
-                "/update\n"
-                "/heap\n"
-                "/now\n"
-                "/flash\n"
-                "\nVersion: " COORDINATOR_VERSION
-                "");
-            });
-
-        server.begin();
+    if (!littlefs_read_config()) {
+        while (true) {
+            Serial.println(F("Stalled"));
+            delay(10000);
+        }
     }
+
+    setup_static_ip();
+    init_wifi();
+
+    server.on("/get/devices", HTTP_GET, http_page_devices);
+    server.on("/get/very_short", HTTP_GET, http_page_very_short_data);
+    server.on("/get/short", HTTP_GET, http_page_short_data);
+    server.on("/get/long", HTTP_GET, http_page_long_data);
+
+    server.on("/update", HTTP_POST, http_api_update);
+    server.onNotFound(http_page_not_found);
+
+    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", String(ESP.getFreeHeap()));
+    });
+
+    server.on("/now", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", String((unsigned long)time(NULL)));
+    });
+
+    server.on("/flash", HTTP_GET, http_page_flash);
+    server.on("/flash", HTTP_POST, http_api_flash, http_api_flash_part);
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(200, "text/plain", 
+            "/get/devices (index / id)\n"
+            "/get/very_short (index / id)\n"
+            "/get/short (index / id)\n"
+            "/get/long (index / id)\n"
+            "/update\n"
+            "/heap\n"
+            "/now\n"
+            "/flash\n"
+            "\nVersion: " COORDINATOR_VERSION
+            "");
+        });
+
+    server.begin();
 
     if (global_config_data.interval < 1) {
         global_config_data.interval = 1;

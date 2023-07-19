@@ -16,11 +16,50 @@
     <ClCompile Include="src\LittleFS.cpp">
       <Filter>Misc Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Sensor_S8.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sensor_SHT31.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sensor_SHT41.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sensor_MZH19.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MyWifi.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HTTPPages.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\LittleFS.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
     <ClInclude Include="__vm\.Sensor.vsarduino.h" />
+    <ClInclude Include="src\Sensor_Interface.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sensor_MZH19.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sensor_S8.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sensor_SHT31.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sensor_SHT41.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MyWifi.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\HTTPPages.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
