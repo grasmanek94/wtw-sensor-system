@@ -4,6 +4,7 @@
 #include "LittleFS.hpp"
 
 #include <ESPAsyncWebSrv.h>
+#include <Update.h>
 
 const int INVALID_DEVICE_ID = -1;
 
@@ -122,7 +123,7 @@ void http_api_update(AsyncWebServerRequest* request) {
 
 void http_page_devices(AsyncWebServerRequest* request) {
     if (!check_auth(request)) {
-        return request->requestAuthentication();;
+        return request->requestAuthentication();
     }
 
     String devices = sensors[0].getHeaders();
@@ -143,7 +144,7 @@ void http_page_devices(AsyncWebServerRequest* request) {
 
 void http_page_very_short_data(AsyncWebServerRequest* request) {   
     if (!check_auth(request)) {
-        return request->requestAuthentication();;
+        return request->requestAuthentication();
     }
 
     int device_index = get_device_index(request);
@@ -168,30 +169,11 @@ void http_page_very_short_data(AsyncWebServerRequest* request) {
     }
     
     request->send(HTTP_OK, "text/plain", data);
-
-    /*AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [sensor](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-        String data;
-        if (index == 0) {
-            data += sensor->very_short_data[index].getHeaders();
-        }
-
-        data += sensor->very_short_data[index].toString();
-        int size = max(data.length(), maxLen);
-
-        memcpy(buffer, data.c_str(), size);
-        //buffer[size - 1] = 0;
-
-        return size;
-    });
-
-    response->setCode(HTTP_OK);
-    response->setContentType("text/plain");
-    request->send(response);*/
 }
 
 void http_page_short_data(AsyncWebServerRequest* request) {
     if (!check_auth(request)) {
-        return request->requestAuthentication();;
+        return request->requestAuthentication();
     }
 
     int device_index = get_device_index(request);
@@ -246,4 +228,66 @@ void http_page_long_data(AsyncWebServerRequest* request) {
     }
 
     request->send(HTTP_OK, "text/plain", data);
+}
+
+const char flash_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+</head>
+<body>
+  <form method="POST" action="/flash" enctype="multipart/form-data"><input type="file" name="data"/><input type="submit" name="upload" value="Upload" title="Upload File"></form>
+</body>
+</html>
+)rawliteral";
+
+String http_page_flash_processor(const String& var) {
+    return String();
+}
+
+void http_page_flash(AsyncWebServerRequest* request) {
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+    request->send_P(200, "text/html", flash_html, http_page_flash_processor);
+    ESP.restart();
+}
+
+void http_api_flash(AsyncWebServerRequest* request) {
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+}
+
+void http_api_flash_part(AsyncWebServerRequest* request, String filename, size_t index, uint8_t* data, size_t len, bool final) {
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+    if (index == 0) {
+        if (!Update.begin(UPDATE_SIZE_UNKNOWN)) { //start with max available size
+            Update.printError(Serial);
+            request->redirect("/flash?status=error&message=" + String(Update.errorString()));
+        }
+    }
+
+    if (len) {
+        if (Update.write(data, len) != len) {
+            Update.printError(Serial);
+            request->redirect("/flash?status=error&message=" + String(Update.errorString()));
+        }
+    }
+
+    if (final) {
+        if (Update.end(true)) { //true to set the size to the current progress
+            request->redirect("/flash?status=success");
+        }
+        else {
+            Update.printError(Serial);
+            request->redirect("/flash?status=error&message=" + String(Update.errorString()));
+        }
+    }
 }

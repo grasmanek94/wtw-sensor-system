@@ -10,6 +10,8 @@
 #include "src/VentilationState.hpp"
 #include "src/WiFiReconnect.hpp"
 
+#define COORDINATOR_VERSION "1.2"
+
 AsyncWebServer server(80);
 
 bool use_static_ip = false;
@@ -112,6 +114,9 @@ void setup() {
             request->send(200, "text/plain", String((unsigned long)time(NULL)));
         });
 
+        server.on("/flash", HTTP_GET, http_page_flash);
+        server.on("/flash", HTTP_POST, http_api_flash, http_api_flash_part);
+
         server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
             request->send(200, "text/plain", 
                 "/get/devices (index / id)\n"
@@ -121,6 +126,8 @@ void setup() {
                 "/update\n"
                 "/heap\n"
                 "/now\n"
+                "/flash\n"
+                "\nVersion: " COORDINATOR_VERSION
                 "");
             });
 

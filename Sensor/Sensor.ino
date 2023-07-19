@@ -1,3 +1,4 @@
+#include <Adafruit_SHT4x.h>
 #include <UrlEncode.h>
 
 #include <ArduinoJson.h>
