@@ -19,7 +19,7 @@ AsyncWebServer server(80);
 
 Sensor_Interface* sensors[] = {
     new Sensor_S8()
-    , new Sensor_SHT41()
+    , new Sensor_SHT4X()
     //, new Sensor_SHT31()
     //, new Sensor_MHZ19()
 };
@@ -48,8 +48,10 @@ void setup() {
     server.on("/", HTTP_GET, http_page_flash);
     server.on("/", HTTP_POST, http_api_flash, http_api_flash_part);
 
-    server.begin();
+    server.on("/config", HTTP_GET, http_page_config);
+    server.on("/config", HTTP_POST, http_api_config);
 
+    server.begin();
 
     if (global_config_data.interval < 1) {
         global_config_data.interval = 1;

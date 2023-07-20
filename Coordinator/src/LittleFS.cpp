@@ -167,3 +167,7 @@ bool littlefs_read_config() {
 
     return false;
 }
+
+void littlefs_write_config() {
+    saveConfig();
+}

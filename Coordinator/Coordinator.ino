@@ -123,6 +123,9 @@ void setup() {
     server.on("/flash", HTTP_GET, http_page_flash);
     server.on("/flash", HTTP_POST, http_api_flash, http_api_flash_part);
 
+    server.on("/config", HTTP_GET, http_page_config);
+    server.on("/config", HTTP_POST, http_api_config);
+
     server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
         request->send(200, "text/plain", 
             "/get/devices (index / id)\n"
@@ -133,6 +136,7 @@ void setup() {
             "/heap\n"
             "/now\n"
             "/flash\n"
+            "/config\n"
             "\nVersion: " COORDINATOR_VERSION
             "");
         });

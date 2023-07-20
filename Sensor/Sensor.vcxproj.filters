@@ -39,7 +39,6 @@
     <ClInclude Include="src\LittleFS.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
-    <ClInclude Include="__vm\.Sensor.vsarduino.h" />
     <ClInclude Include="src\Sensor_Interface.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
@@ -61,5 +60,6 @@
     <ClInclude Include="src\HTTPPages.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
+    <ClInclude Include="__vm\.Sensor.vsarduino.h" />
   </ItemGroup>
 </Project>

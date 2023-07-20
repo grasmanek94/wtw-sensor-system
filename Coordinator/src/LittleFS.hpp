@@ -35,3 +35,4 @@ const String global_config_filename = "/config.json";
 
 extern global_config global_config_data;
 bool littlefs_read_config();
+void littlefs_write_config();

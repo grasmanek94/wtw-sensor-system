@@ -4,7 +4,7 @@
 
 #include <Adafruit_SHT4x.h>
 
-class Sensor_SHT41 : public Sensor_Interface {
+class Sensor_SHT4X : public Sensor_Interface {
 private:
 	int i2c_sda_pin;
 	int i2c_scl_pin;
@@ -16,8 +16,8 @@ private:
 	bool found;
 
 public:
-	Sensor_SHT41(int i2c_sda_pin = 15, int i2c_scl_pin = 2, sht4x_precision_t precision = SHT4X_HIGH_PRECISION);
-	virtual ~Sensor_SHT41();
+	Sensor_SHT4X(int i2c_sda_pin = 15, int i2c_scl_pin = 4, sht4x_precision_t precision = SHT4X_HIGH_PRECISION);
+	virtual ~Sensor_SHT4X();
 
 	virtual void setup() override;
 	virtual void print_measurement() const override;

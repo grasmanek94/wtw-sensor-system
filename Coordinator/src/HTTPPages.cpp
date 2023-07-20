@@ -291,3 +291,131 @@ void http_api_flash_part(AsyncWebServerRequest* request, String filename, size_t
         }
     }
 }
+
+
+const char config_html_start[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+</head>
+<body>
+    <form action="/config" method="post">
+)rawliteral";
+
+const char config_html_end[] PROGMEM = R"rawliteral(
+      <input type="submit" value="Save + Reset ESP32">
+    </form>
+</body>
+</html>
+)rawliteral";
+
+String html_encode(String data) {
+    const char* p = data.c_str();
+    String rv = "";
+    while (p && *p) {
+        char escapeChar = *p++;
+        switch (escapeChar) {
+        case '&': rv += "&amp;"; break;
+        case '<': rv += "&lt;"; break;
+        case '>': rv += "&gt;"; break;
+        case '"': rv += "&quot;"; break;
+        case '\'': rv += "&#x27;"; break;
+        case '/': rv += "&#x2F;"; break;
+        default: rv += escapeChar; break;
+        }
+    }
+    return rv;
+}
+
+String add_form_label(String id, String name, String value) {
+    return "<label for=\"" + id + "\">" + name + ":</label><br>\n"
+        "<input type=\"text\" id=\"" + id + "\" name=\"" + id + "\" value=\"" + html_encode(value) + "\"><br>\n";
+}
+
+void http_page_config(AsyncWebServerRequest* request) {
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+    String html(config_html_start);
+
+#define ADD_OPTION(name, description)  html += add_form_label(#name, description, String(global_config_data. name))
+
+   ADD_OPTION(wifi_ssid, "WiFi SSID");
+   ADD_OPTION(wifi_password, "WiFi Password");
+   ADD_OPTION(device_custom_hostname, "Custom Hostname");
+   ADD_OPTION(destination_address, "Destination Address");
+   ADD_OPTION(auth_user, "API User");
+   ADD_OPTION(auth_password, "API Password");
+   ADD_OPTION(interval, "Update Interval (s)");
+   ADD_OPTION(co2_ppm_high, "co2_ppm_high");
+   ADD_OPTION(co2_ppm_medium, "co2_ppm_medium");
+   ADD_OPTION(co2_ppm_low, "co2_ppm_low");
+   ADD_OPTION(rh_high, "rh_high");
+   ADD_OPTION(rh_medium, "rh_medium");
+   ADD_OPTION(rh_low, "rh_low");
+   ADD_OPTION(static_ip, "Static IP Address");
+   ADD_OPTION(gateway_ip, "Gateway IP Address");
+   ADD_OPTION(subnet, "Subnet Mask");
+   ADD_OPTION(primary_dns, "Primary DNS IP Address");
+   ADD_OPTION(secondary_dns, "Secondary DNS IP Address");
+
+#undef ADD_OPTION
+
+    html += config_html_end;
+    request->send(200, "text/html", html);
+}
+
+
+void http_api_config(AsyncWebServerRequest* request) {
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+#define PARSE_ENTRY(name, conversion) param = request->getParam(#name, true); \
+    if (!param) { \
+        return request->send(HTTP_BAD_REQUEST, "text/html", "!wifi_ssid"); \
+    } \
+    global_config_data. name = param->value() conversion; \
+    Serial.println(global_config_data. name)
+
+#define PARSE_ENTRY_STR(name) PARSE_ENTRY(name, )
+#define PARSE_ENTRY_INT(name) PARSE_ENTRY(name, .toInt())
+#define PARSE_ENTRY_FLOAT(name) PARSE_ENTRY(name, .toFloat())
+
+    AsyncWebParameter* param = nullptr;
+    PARSE_ENTRY_STR(wifi_ssid);
+    PARSE_ENTRY_STR(wifi_password);
+    PARSE_ENTRY_STR(device_custom_hostname);
+    PARSE_ENTRY_STR(destination_address);
+    PARSE_ENTRY_STR(auth_user);
+    PARSE_ENTRY_STR(auth_password);
+    PARSE_ENTRY_INT(interval);
+    PARSE_ENTRY_INT(co2_ppm_high);
+    PARSE_ENTRY_INT(co2_ppm_medium);
+    PARSE_ENTRY_INT(co2_ppm_low);
+    PARSE_ENTRY_FLOAT(rh_high);
+    PARSE_ENTRY_FLOAT(rh_medium);
+    PARSE_ENTRY_FLOAT(rh_low);
+    PARSE_ENTRY_STR(static_ip);
+    PARSE_ENTRY_STR(gateway_ip);
+    PARSE_ENTRY_STR(subnet);
+    PARSE_ENTRY_STR(primary_dns);
+    PARSE_ENTRY_STR(secondary_dns);
+
+#undef PARSE_ENTRY_FLOAT
+#undef PARSE_ENTRY_INT
+#undef PARSE_ENTRY_STR
+#undef PARSE_ENTRY
+
+    littlefs_write_config();
+    if (!littlefs_read_config()) {
+        return request->send(HTTP_BAD_REQUEST, "text/html");
+    }
+
+    request->send(HTTP_OK, "text/html");
+
+    ESP.restart();
+}
