@@ -1,4 +1,4 @@
-#include "Sensor_SHT41.hpp"
+#include "Sensor_SHT4X.hpp"
 
 #include <Adafruit_SHT4x.h>
 #include <Wire.h>

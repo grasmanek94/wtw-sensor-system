@@ -22,7 +22,7 @@
     <ClCompile Include="src\Sensor_SHT31.cpp">
       <Filter>Misc Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Sensor_SHT41.cpp">
+    <ClCompile Include="src\Sensor_SHT4X.cpp">
       <Filter>Misc Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Sensor_MZH19.cpp">
@@ -51,7 +51,7 @@
     <ClInclude Include="src\Sensor_SHT31.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Sensor_SHT41.hpp">
+    <ClInclude Include="src\Sensor_SHT4X.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
     <ClInclude Include="src\MyWifi.hpp">
@@ -61,5 +61,8 @@
       <Filter>Misc Files</Filter>
     </ClInclude>
     <ClInclude Include="__vm\.Sensor.vsarduino.h" />
+    <ClInclude Include="src\Sensor_Null.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

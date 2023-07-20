@@ -4,6 +4,10 @@
 
 #include <Adafruit_SHT4x.h>
 
+#ifndef SENSOR_INTERFACE_SHT4X_INCLUDED
+#define SENSOR_INTERFACE_SHT4X_INCLUDED 1
+#endif
+
 class Sensor_SHT4X : public Sensor_Interface {
 private:
 	int i2c_sda_pin;

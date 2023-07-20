@@ -4,6 +4,10 @@
 
 #include <SHT31.h>
 
+#ifndef SENSOR_INTERFACE_SHT31_INCLUDED
+#define SENSOR_INTERFACE_SHT31_INCLUDED 1
+#endif
+
 class Sensor_SHT31 : public Sensor_Interface {
 private:
 	const int SHT31_ADDRESS = 0x44;

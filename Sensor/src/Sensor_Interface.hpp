@@ -5,7 +5,7 @@ public:
 	Sensor_Interface() {}
 	virtual ~Sensor_Interface() {}
 
-	virtual const char* const get_name() const { return "Sensor_Interface"; }
+	virtual const char* const get_name() const { return ""; }
 	virtual void setup() {}
 	virtual void print_measurement() const {}
 	virtual void update() {}

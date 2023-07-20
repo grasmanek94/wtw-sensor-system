@@ -5,6 +5,10 @@
 #include <HardwareSerial.h>
 #include <s8_uart.h>
 
+#ifndef SENSOR_INTERFACE_S8_INCLUDED
+#define SENSOR_INTERFACE_S8_INCLUDED 1
+#endif
+
 class Sensor_S8 : public Sensor_Interface {
 public:
 	enum class CALIBRATION_STATUS {

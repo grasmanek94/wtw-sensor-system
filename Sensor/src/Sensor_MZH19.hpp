@@ -5,6 +5,10 @@
 #include <HardwareSerial.h>
 #include <MHZ19.h>
 
+#ifndef SENSOR_INTERFACE_MHZ19_INCLUDED
+#define SENSOR_INTERFACE_MHZ19_INCLUDED 1
+#endif
+
 class Sensor_MHZ19: public Sensor_Interface {
 private:
 	HardwareSerial ss;

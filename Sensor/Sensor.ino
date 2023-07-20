@@ -6,8 +6,12 @@
 #include "src/HTTPPages.hpp"
 #include "src/LittleFS.hpp"
 #include "src/MyWifi.hpp"
+
+#include "src/Sensor_Null.hpp"
+
+// Select connected sensors here
 #include "src/Sensor_S8.hpp"
-#include "src/Sensor_SHT41.hpp"
+#include "src/Sensor_SHT4X.hpp"
 //#include "src/Sensor_MZH19.hpp"
 //#include "src/Sensor_SHT31.hpp"
 
@@ -17,11 +21,21 @@ char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");
 AsyncWebServer server(80);
 
-Sensor_Interface* sensors[] = {
-    new Sensor_S8()
-    , new Sensor_SHT4X()
-    //, new Sensor_SHT31()
-    //, new Sensor_MHZ19()
+Sensor_Interface* sensors[] = 
+{ 
+#ifdef SENSOR_INTERFACE_S8_INCLUDED
+    new Sensor_S8(), 
+#endif
+#ifdef SENSOR_INTERFACE_SHT4X_INCLUDED
+    new Sensor_SHT4X(),
+#endif
+#ifdef SENSOR_INTERFACE_SHT31_INCLUDED
+    new Sensor_SHT31(),
+#endif
+#ifdef SENSOR_INTERFACE_MHZ19_INCLUDED
+    new Sensor_MHZ19(),
+#endif
+    new Sensor_Null()
 };
 
 void setup() {
@@ -38,10 +52,13 @@ void setup() {
     init_wifi();
     for (auto& sensor : sensors) {
         sensor->setup();
-        if (SENSORS_LIST_STR.length() > 0) {
-            SENSORS_LIST_STR += "/";
+        String name = sensor->get_name();
+        if (name.length() > 0) {
+            if (SENSORS_LIST_STR.length() > 0) {
+                SENSORS_LIST_STR += "/";
+            }
+            SENSORS_LIST_STR += sensor->get_name();
         }
-        SENSORS_LIST_STR += sensor->get_name();
     }
 
     server.onNotFound(http_page_not_found);
@@ -89,6 +106,7 @@ void process_sensor_data(Sensor_Interface* sensor) {
         meter_status = sensor->get_meter_status();
     }
 
+#ifdef SENSOR_INTERFACE_S8_INCLUDED
     if (sensor->get_name() == "S8") { // dynamic_cast unavailable
         Sensor_S8* sensor_s8 = static_cast<Sensor_S8*>(sensor);
         if (sensor_s8 != nullptr) {
@@ -111,6 +129,7 @@ void process_sensor_data(Sensor_Interface* sensor) {
             }
         }
     }
+#endif
 }
 
 void perform_measurements() {
