@@ -39,7 +39,8 @@ private:
 	unsigned long perform_manual_calibration_time;
 
 	const unsigned long meassurement_elapsed_millis = 4000;
-	const unsigned long perform_manual_calibration_after_ms = 20 * 60 * 1000; // 20 min
+	const unsigned long perform_manual_calibration_after_ms = 5 * 60 * 1000; // 5 min
+//	const unsigned long perform_manual_calibration_after_ms = 20 * 1000; // 20 s
 
 public:
 

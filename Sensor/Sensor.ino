@@ -15,7 +15,7 @@
 //#include "src/Sensor_MZH19.hpp"
 //#include "src/Sensor_SHT31.hpp"
 
-#define SENSOR_VERSION "1.2"
+#define SENSOR_VERSION "1.3"
 
 char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");
@@ -87,7 +87,13 @@ void print_measurements() {
 int last_measured_co2_ppm = -1;
 float last_measured_rh_value = -1.0f;
 float last_measured_temp = -273.15f;
-int meter_status = 0xFF;
+int meter_status =
+                    #ifdef SENSOR_INTERFACE_S8_INCLUDED
+                    0xFF
+                    #else
+                    0x00
+                    #endif
+                    ;
 
 void process_sensor_data(Sensor_Interface* sensor) {
     if (sensor->has_co2_ppm()) {
@@ -144,6 +150,7 @@ void perform_measurements() {
     }
 }
 
+unsigned long uptime_ticks = 0;
 void send_measurements() {
     if (!is_wifi_connected_debug()) {
         return;
@@ -151,11 +158,14 @@ void send_measurements() {
 
     HTTPClient http;
     
+    ++uptime_ticks;
+
     String params = "?deviceId=" + urlEncode(WiFi.macAddress()) +
         "&co2=" + last_measured_co2_ppm +
         "&rh=" + last_measured_rh_value +
         "&temp=" + last_measured_temp +
-        "&status=" + meter_status;
+        "&status=" + meter_status + 
+        "&seqnr=" + uptime_ticks;
     
     http.begin("http://" + global_config_data.destination_address + "/update" + params);
     http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());

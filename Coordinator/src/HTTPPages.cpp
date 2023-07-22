@@ -95,6 +95,7 @@ void http_api_update(AsyncWebServerRequest* request) {
     float temp = 0.0f;
     int co2_ppm = 0;
     int sensor_status = 0;
+    long sequence_number = 0;
 
     param = request->getParam("rh");
     if (param) {
@@ -116,7 +117,12 @@ void http_api_update(AsyncWebServerRequest* request) {
         sensor_status = param->value().toInt();
     }
 
-    sensors[device_index].push(co2_ppm, rh, temp, sensor_status);
+    param = request->getParam("seqnr");
+    if (param) {
+        sequence_number = param->value().toInt();
+    }
+
+    sensors[device_index].push(co2_ppm, rh, temp, sensor_status, sequence_number);
 
     request->send(HTTP_OK, "text/plain");
 }

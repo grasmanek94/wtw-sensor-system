@@ -21,7 +21,7 @@ device_data::device_data() :
     _tmp_avg{ 0, 0, 0.0f, 0.0f }
 {}
 
-void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status) {
+void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
 
     current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);
@@ -32,6 +32,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status) {
     latest_measurement.rh = rh;
     latest_measurement.temp_c = temp_c;
     latest_measurement.sensor_status = sensor_status;
+    latest_measurement.sequence_number = sequence_number;
     latest_measurement.state_at_this_time = get_highest_ventilation_state(current_ventilation_state_co2, current_ventilation_state_rh);
 
     very_short_data.pushOverwrite(latest_measurement);
@@ -123,7 +124,8 @@ String measurement_entry::toString() const
         + String(co2_ppm)               + ",\t"
         + String(rh)                    + ",\t"
         + String(temp_c)                + ",\t"
-        + String((int)sensor_status)    + ",\t"
+        + String(sensor_status)         + ",\t"
+        + String(sequence_number)       + ",\t"
         + String(state_at_this_time)    + "\n";
 }
 
@@ -134,6 +136,6 @@ String measurement_entry::getHeaders() const {
         "rh,\t"
         "temp_c,\t"
         "sensor_status,\t"
+        "sequence_number,\t"
         "state_at_this_time\n";
 }
-

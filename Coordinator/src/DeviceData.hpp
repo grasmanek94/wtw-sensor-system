@@ -17,8 +17,9 @@ struct measurement_entry {
     int co2_ppm;
     float rh;
     float temp_c;
-    int sensor_status;
+    long sensor_status;
     requested_ventilation_state state_at_this_time;
+    unsigned long sequence_number;
 
     String toString() const;
     String getHeaders() const;
@@ -46,6 +47,7 @@ struct device_data {
         avg.rh = 0.0f;
         avg.temp_c = 0.0f;
         avg.sensor_status = 0;
+        avg.sequence_number = 0;
 
         avg.state_at_this_time = requested_ventilation_state_low;
         for (int i = 0; i < size; ++i) {
@@ -55,9 +57,8 @@ struct device_data {
             avg.sensor_status |= container[i].sensor_status;
 
             // newest time = time of all averages
-            if (container[i].relative_time > avg.relative_time) {
-                avg.relative_time = container[i].relative_time;
-            }
+            avg.relative_time = max(avg.relative_time, container[i].relative_time);
+            avg.sequence_number = max(avg.sequence_number, container[i].sequence_number);
 
             avg.state_at_this_time = get_highest_ventilation_state(container[i].state_at_this_time, avg.state_at_this_time);
         }
@@ -104,7 +105,7 @@ struct device_data {
         return requested_ventilation_state_low;
     }
 
-    void push(int co2_ppm, float rh, float temp_c, int sensor_status);
+    void push(int co2_ppm, float rh, float temp_c, int sensor_status, long sequence_number);
 
     bool is_associated() const;
     void associate(String identifier);
