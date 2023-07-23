@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "lcdyGE31e4bHOjdnmAy+itvw0QHlKAqq+OBPKLG16ZJfExXbRP4fEPYiQTavJ591XYojCH1lHKQVFRIZK8leMg==",
+  "dgSpecHash": "Qtcu+CEbzgkI7QRW8id3l6YsiA2Ypm9pRklv9tgu6GcJAjIn170FpdVXO1255OQldnx+tWdmY1KNFkkq/C5Xrw==",
   "success": true,
   "projectFilePath": "C:\\Development\\Projects\\MCU\\Sensors\\CoordinatorViewer\\CoordinatorViewer.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\Rafal\\.nuget\\packages\\csvhelper\\30.0.1\\csvhelper.30.0.1.nupkg.sha512"
+  ],
   "logs": []
 }

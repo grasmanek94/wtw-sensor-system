@@ -1,0 +1,17 @@
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\bin\Release\net7.0-windows\CoordinatorViewer.exe
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\bin\Release\net7.0-windows\CoordinatorViewer.deps.json
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\bin\Release\net7.0-windows\CoordinatorViewer.runtimeconfig.json
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\bin\Release\net7.0-windows\CoordinatorViewer.dll
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\bin\Release\net7.0-windows\CoordinatorViewer.pdb
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.csproj.AssemblyReference.cache
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.Form1.resources
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.csproj.GenerateResource.cache
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.AssemblyInfoInputs.cache
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.AssemblyInfo.cs
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.csproj.CoreCompileInputs.cache
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.dll
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\refint\CoordinatorViewer.dll
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.pdb
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\CoordinatorViewer.genruntimeconfig.cache
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Release\net7.0-windows\ref\CoordinatorViewer.dll
