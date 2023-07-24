@@ -14,9 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="FormAllDevicesViewer.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Update="FormAllDevicesViewer.cs" />
   </ItemGroup>
 
 </Project>

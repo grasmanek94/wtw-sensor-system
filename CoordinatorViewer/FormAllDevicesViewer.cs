@@ -32,7 +32,7 @@ namespace CoordinatorViewer
             data_grid.SelectionChanged += DeviceSelectionChanged;
         }
 
-        private void DeviceSelectionChanged(object? sender, EventArgs e)
+        private async void DeviceSelectionChanged(object? sender, EventArgs e)
         {
             if (data_grid.SelectedCells.Count != 1)
             {
@@ -41,10 +41,12 @@ namespace CoordinatorViewer
 
             var selected_cell = data_grid.SelectedCells[0];
 
-            int row = selected_cell.RowIndex;
-            int column = selected_cell.ColumnIndex;
+            int index = selected_cell.RowIndex;
+            string column_name = selected_cell.OwningColumn.Name;
 
-            Debug.WriteLine(row + ":" + column);
+            Debug.WriteLine(index + ":" + column_name);
+
+            CoordinatorDeviceEntry entry = device_entries_list[index];
         }
 
         private void RunOn(Control which, Action action)
@@ -159,7 +161,7 @@ namespace CoordinatorViewer
                         bool changed = false;
                         foreach (var device in devices)
                         {
-                            if (device.device_id.Length <= 0)
+                            if (device.device_id.Length <= 0 || !device.is_associated)
                             {
                                 continue;
                             }
