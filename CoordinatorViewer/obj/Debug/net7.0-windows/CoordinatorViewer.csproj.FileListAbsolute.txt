@@ -16,6 +16,5 @@ C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Debug\net7.0-windows\C
 C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Debug\net7.0-windows\ref\CoordinatorViewer.dll
 C:\Development\Projects\MCU\Sensors\CoordinatorViewer\bin\Debug\net7.0-windows\CsvHelper.dll
 C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Debug\net7.0-windows\CoordinatorViewer.csproj.CopyComplete
-C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Debug\net7.0-windows\CoordinatorViewer.FormAsync.resources
-C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Debug\net7.0-windows\CoordinatorViewer.FormSync.resources
 C:\Development\Projects\MCU\Sensors\CoordinatorViewer\obj\Debug\net7.0-windows\CoordinatorViewer.FormAllDevicesViewer.resources
+C:\Development\Projects\MCU\Sensors\CoordinatorViewer\bin\Debug\net7.0-windows\Newtonsoft.Json.dll

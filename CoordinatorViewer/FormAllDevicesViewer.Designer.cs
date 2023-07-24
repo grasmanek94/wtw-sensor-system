@@ -36,13 +36,13 @@
             // 
             data_grid.AllowUserToAddRows = false;
             data_grid.AllowUserToDeleteRows = false;
+            data_grid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             data_grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            data_grid.Dock = DockStyle.Fill;
-            data_grid.Location = new Point(0, 0);
+            data_grid.Location = new Point(12, 12);
             data_grid.Name = "data_grid";
             data_grid.ReadOnly = true;
             data_grid.RowTemplate.Height = 25;
-            data_grid.Size = new Size(1002, 545);
+            data_grid.Size = new Size(978, 325);
             data_grid.TabIndex = 0;
             // 
             // FormAllDevicesViewer

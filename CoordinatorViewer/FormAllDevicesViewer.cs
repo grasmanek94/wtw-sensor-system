@@ -10,40 +10,14 @@ namespace CoordinatorViewer
         private CoordinatorData coordinator_data;
         private readonly BindingList<CoordinatorDeviceEntry> device_entries_list;
         private readonly Dictionary<int, int> device_entries_list_indexes;
-        private readonly Dictionary<int, CoordinatorDeviceEntry> device_entries;
-        private readonly BindingSource device_entries_source;
 
         public FormAllDevicesViewer()
         {
             InitializeComponent();
 
             coordinator_data = new CoordinatorData();
-            device_entries = new Dictionary<int, CoordinatorDeviceEntry>();
             device_entries_list = new BindingList<CoordinatorDeviceEntry>();
             device_entries_list_indexes = new Dictionary<int, int>();
-            device_entries_source = new BindingSource();
-
-            device_entries_source.DataSource = device_entries.Select(a => new
-            {
-                a.Value.device_index,
-                a.Value.device_id,
-                a.Value.current_ventilation_state_co2,
-                a.Value.current_ventilation_state_rh,
-                a.Value.is_associated,
-                a.Value.has_recent_data,
-                a.Value.very_short_count,
-                a.Value.short_count,
-                a.Value.long_count,
-                a.Value.relative_time,
-                a.Value.co2_ppm,
-                a.Value.rh,
-                a.Value.temp_c,
-                a.Value.sensor_status,
-                a.Value.sequence_number,
-                a.Value.state_at_this_time
-            }).ToList();
-
-            //data_grid.DataSource = device_entries_source;
             data_grid.DataSource = device_entries_list;
             data_grid.AutoGenerateColumns = true;
             data_grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
@@ -54,6 +28,23 @@ namespace CoordinatorViewer
             timer.Elapsed += Start;
             timer.Interval = 1000;
             timer.Start();
+
+            data_grid.SelectionChanged += DeviceSelectionChanged;
+        }
+
+        private void DeviceSelectionChanged(object? sender, EventArgs e)
+        {
+            if (data_grid.SelectedCells.Count != 1)
+            {
+                return;
+            }
+
+            var selected_cell = data_grid.SelectedCells[0];
+
+            int row = selected_cell.RowIndex;
+            int column = selected_cell.ColumnIndex;
+
+            Debug.WriteLine(row + ":" + column);
         }
 
         private void RunOn(Control which, Action action)
@@ -168,24 +159,22 @@ namespace CoordinatorViewer
                         bool changed = false;
                         foreach (var device in devices)
                         {
-                            if (device.device_id.Length > 0)
+                            if (device.device_id.Length <= 0)
                             {
-                                device_entries[device.GetHashCode()] = device;
-
-                                int index = -1;
-                                if (device_entries_list_indexes.TryGetValue(device.GetHashCode(), out index))
-                                {
-                                    if(CopyIfChanged(device_entries_list[index], device))
-                                    {
-                                        changed = true;
-                                    }
-                                }
-                                else
-                                {
-                                    device_entries_list_indexes.Add(device.GetHashCode(), device_entries_list.Count);
-                                    device_entries_list.Add(device);
-                                }
+                                continue;
                             }
+
+                            int index = -1;
+                            if (device_entries_list_indexes.TryGetValue(device.GetHashCode(), out index))
+                            {
+                                changed |= CopyIfChanged(device_entries_list[index], device);
+                            }
+                            else
+                            {
+                                device_entries_list_indexes.Add(device.GetHashCode(), device_entries_list.Count);
+                                device_entries_list.Add(device);
+                            }
+                            
                         }
 
                         if (changed)

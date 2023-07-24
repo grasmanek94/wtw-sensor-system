@@ -1,11 +1,48 @@
 using System.DirectoryServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CoordinatorViewer
 {
     internal static class Program
     {
-        public static readonly string username = "";
-        public static readonly string password = "";
+        public static string username = "";
+        public static string password = "";
+
+        static void UpdateAuth()
+        {
+            string current_level = "./";
+            const string next_level = "../";
+            const string config_file = "/data/config.json";
+
+            while (true)
+            {
+                var directories = Directory.GetDirectories(current_level);
+                
+                foreach (var d in directories)
+                {
+                    string config_file_result = d + config_file;
+                    if (File.Exists(config_file_result))
+                    {
+                        JObject config = JObject.Parse(File.ReadAllText(config_file_result));
+                        if(config.ContainsKey("auth_user") && config.ContainsKey("auth_pw"))
+                        {
+                            username = config["auth_user"].ToString();
+                            password = config["auth_pw"].ToString();
+                            return;
+                        }
+                    }
+                }
+
+                string absolute = Path.GetFullPath(current_level);
+                if(absolute.EndsWith(":\\"))
+                {
+                    break;
+                }
+                current_level += next_level;
+            }
+        }
+
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
@@ -16,18 +53,8 @@ namespace CoordinatorViewer
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
 
-            /*CoordinatorData data = new CoordinatorData();
-            var task = data.GetDevices();
-            task.Wait();
-            var r = task.Result;
-            foreach(CoordinatorDeviceEntry entry in r)
-            {
-                Console.WriteLine(entry.ToString());
-            }*/
+            UpdateAuth();
 
-
-            //Application.Run(new FormSync());
-            //Application.Run(new FormAsync());
             Application.Run(new FormAllDevicesViewer());
         }
     }
