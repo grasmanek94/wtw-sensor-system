@@ -32,7 +32,7 @@ namespace CoordinatorViewer
             };
         }
 
-        public async Task<IEnumerable<T>?> GetData<T>(Task<HttpResponseMessage> http_request)
+        public async Task<List<T>?> GetData<T>(Task<HttpResponseMessage> http_request)
         {
             var response = await http_request;
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
@@ -50,12 +50,12 @@ namespace CoordinatorViewer
             }
         }
 
-        public async Task<IEnumerable<CoordinatorDeviceEntry>?> GetDevices()
+        public async Task<List<CoordinatorDeviceEntry>?> GetDevices()
         {
             return await GetData<CoordinatorDeviceEntry>(http_client.GetAsync(new Uri(base_address, "/get/devices")));
         }
 
-        public async Task<IEnumerable<SensorMeasurement>?> GetMeasurements(Task<HttpResponseMessage> response)
+        public async Task<List<SensorMeasurement>?> GetMeasurements(Task<HttpResponseMessage> response)
         {
             return await GetData<SensorMeasurement>(response);
         }
@@ -70,32 +70,32 @@ namespace CoordinatorViewer
             return http_client.GetAsync(new Uri(base_address, "/get/" + timespan + "/?id=" + id));
         }
 
-        public async Task<IEnumerable<SensorMeasurement>?> GetVeryShortMeasurements(string id)
+        public async Task<List<SensorMeasurement>?> GetVeryShortMeasurements(string id)
         {
             return await GetMeasurements(GetMeasurements("very_short", id));
         }
 
-        public async Task<IEnumerable<SensorMeasurement>?> GetVeryShortMeasurements(int index)
+        public async Task<List<SensorMeasurement>?> GetVeryShortMeasurements(int index)
         {
             return await GetMeasurements(GetMeasurements("very_short", index));
         }
 
-        public async Task<IEnumerable<SensorMeasurement>?> GetShortMeasurements(string id)
+        public async Task<List<SensorMeasurement>?> GetShortMeasurements(string id)
         {
             return await GetMeasurements(GetMeasurements("short", id));
         }
 
-        public async Task<IEnumerable<SensorMeasurement>?> GetShortMeasurements(int index)
+        public async Task<List<SensorMeasurement>?> GetShortMeasurements(int index)
         {
             return await GetMeasurements(GetMeasurements("short", index));
         }
 
-        public async Task<IEnumerable<SensorMeasurement>?> GetLongMeasurements(string id)
+        public async Task<List<SensorMeasurement>?> GetLongMeasurements(string id)
         {
             return await GetMeasurements(GetMeasurements("long", id));
         }
 
-        public async Task<IEnumerable<SensorMeasurement>?> GetLongMeasurements(int index)
+        public async Task<List<SensorMeasurement>?> GetLongMeasurements(int index)
         {
             return await GetMeasurements(GetMeasurements("long", index));
         }

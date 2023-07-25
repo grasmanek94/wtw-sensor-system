@@ -1,6 +1,9 @@
-using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
+using ScottPlot;
+using ScottPlot.DataSources;
+using ScottPlot.WinForms;
 
 namespace CoordinatorViewer
 {
@@ -10,26 +13,56 @@ namespace CoordinatorViewer
         private CoordinatorData coordinator_data;
         private readonly BindingList<CoordinatorDeviceEntry> device_entries_list;
         private readonly Dictionary<int, int> device_entries_list_indexes;
+        private readonly PlotContainer pc_vent_state;
+        private readonly PlotContainer pc_temp;
+        private readonly PlotContainer pc_co2_ppm;
+        private readonly PlotContainer pc_rh;
+        private readonly List<PlotContainer> pc_list;
 
         public FormAllDevicesViewer()
         {
             InitializeComponent();
 
-            coordinator_data = new CoordinatorData();
-            device_entries_list = new BindingList<CoordinatorDeviceEntry>();
-            device_entries_list_indexes = new Dictionary<int, int>();
+            coordinator_data = new();
+            device_entries_list = new();
+            device_entries_list_indexes = new();
             data_grid.DataSource = device_entries_list;
             data_grid.AutoGenerateColumns = true;
             data_grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             data_grid.AllowUserToAddRows = false;
             data_grid.EditMode = DataGridViewEditMode.EditProgrammatically;
 
-            timer = new System.Timers.Timer();
+            pc_vent_state = new();
+            pc_temp = new();
+            pc_co2_ppm = new();
+            pc_rh = new();
+
+            pc_list = new()
+            {
+                pc_vent_state,
+                pc_temp,
+                pc_co2_ppm,
+                pc_rh
+            };
+
+            timer = new();
             timer.Elapsed += Start;
             timer.Interval = 1000;
             timer.Start();
 
             data_grid.SelectionChanged += DeviceSelectionChanged;
+
+            AddPlotToTable();
+        }
+
+        private void AddPlotToTable()
+        {
+            foreach (var pc in pc_list)
+            {
+                plots_panel.Controls.Add(pc.forms_plot);
+            }
+
+            plots_panel.Refresh();
         }
 
         private async void DeviceSelectionChanged(object? sender, EventArgs e)
@@ -41,12 +74,50 @@ namespace CoordinatorViewer
 
             var selected_cell = data_grid.SelectedCells[0];
 
+            
             int index = selected_cell.RowIndex;
             string column_name = selected_cell.OwningColumn.Name;
 
             Debug.WriteLine(index + ":" + column_name);
 
             CoordinatorDeviceEntry entry = device_entries_list[index];
+
+            if (!entry.is_associated)
+            {
+                return;
+            }
+
+            var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.device_id);
+            var measurements_s = await coordinator_data.GetShortMeasurements(entry.device_id);
+            var measurements_l = await coordinator_data.GetLongMeasurements(entry.device_id);
+            int relative_time_max = measurements_vs.Last().relative_time;
+
+            Func<SensorMeasurement, double> relative_time_getter = x => (x.relative_time - relative_time_max) / 60.0 / 60.0;
+
+            var mv_co2 = new MeasurementsView(measurements_vs, measurements_s, measurements_l, relative_time_getter, y => y.co2_ppm);
+            var mv_temp = new MeasurementsView(measurements_vs, measurements_s, measurements_l, relative_time_getter, y => y.temp_c);
+            var mv_rh = new MeasurementsView(measurements_vs, measurements_s, measurements_l, relative_time_getter, y => y.rh);
+            var mv_vs = new MeasurementsView(measurements_vs, measurements_s, measurements_l, relative_time_getter, y => ((double)y.state_at_this_time));
+
+            pc_co2_ppm.plots.Clear();
+            pc_temp.plots.Clear();
+            pc_rh.plots.Clear();
+            pc_vent_state.plots.Clear();
+
+            pc_co2_ppm.Add(entry.device_id).Add(mv_co2);    
+            pc_temp.Add(entry.device_id).Add(mv_co2); 
+            pc_rh.Add(entry.device_id).Add(mv_rh);
+            pc_vent_state.Add(entry.device_id).Add(mv_vs);
+
+            RunOn(plots_panel, () => 
+            {
+                pc_co2_ppm.forms_plot.Plot.AutoScale(true);
+                pc_temp.forms_plot.Plot.AutoScale(true);
+                pc_rh.forms_plot.Plot.AutoScale(true);
+                pc_vent_state.forms_plot.Plot.AutoScale(true);
+
+                plots_panel.Refresh();
+            });
         }
 
         private void RunOn(Control which, Action action)
@@ -176,7 +247,7 @@ namespace CoordinatorViewer
                                 device_entries_list_indexes.Add(device.GetHashCode(), device_entries_list.Count);
                                 device_entries_list.Add(device);
                             }
-                            
+
                         }
 
                         if (changed)

@@ -15,7 +15,7 @@
 //#include "src/Sensor_MZH19.hpp"
 //#include "src/Sensor_SHT31.hpp"
 
-#define SENSOR_VERSION "1.3"
+#define SENSOR_VERSION "1.4"
 
 char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");
@@ -84,9 +84,9 @@ void print_measurements() {
     }
 }
 
-int last_measured_co2_ppm = -1;
-float last_measured_rh_value = -1.0f;
-float last_measured_temp = -273.15f;
+int last_measured_co2_ppm = 0;
+float last_measured_rh_value = 0.0f;
+float last_measured_temp = 0.0f;
 int meter_status =
                     #ifdef SENSOR_INTERFACE_S8_INCLUDED
                     0xFF
