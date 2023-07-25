@@ -2,16 +2,19 @@
 
 namespace CoordinatorViewer
 {
-    internal class PlotContainer
+    internal class PlotContainer: IDisposable
     {
-        public FormsPlot forms_plot { get; set; }
-
+        public readonly FormsPlot forms_plot;
         public readonly Dictionary<string, ScatterPlot> plots;
+        private readonly double y_min;
+        private readonly double y_max;
 
-        public PlotContainer() { 
+        public PlotContainer(double y_min = 0.0, double y_max = 0.0) { 
             forms_plot = new FormsPlot();
             forms_plot.Dock = DockStyle.Fill;
-            forms_plot.Plot.AutoScale(true);
+
+            this.y_min = y_min;
+            this.y_max = y_max;
 
             plots = new();
         }
@@ -43,14 +46,28 @@ namespace CoordinatorViewer
         {
             foreach(var plot in plots.Values)
             {
-                plot.Clear();
+                plot.Dispose();
             }
             plots.Clear();
         }
 
-        ~PlotContainer()
+        public void Fit()
+        {
+            forms_plot.Plot.AutoScale(true);
+
+            forms_plot.Plot.YAxis.Min = y_min;
+            forms_plot.Plot.YAxis.Max = y_max;
+        }
+
+        public void Dispose()
         {
             Clear();
+            forms_plot.Dispose();
+        }
+
+        ~PlotContainer()
+        {
+            Dispose();
         }
     }
 }

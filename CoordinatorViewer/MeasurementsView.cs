@@ -63,22 +63,26 @@ namespace CoordinatorViewer
         {
             get {
                 Coordinates data;
+
                 int new_index = index;
-                if(new_index < l.Count)
+                int lc = (l?.Count ?? 0);
+                int sc = (s?.Count ?? 0);
+
+                if(new_index < lc)
                 {
                     data = new Coordinates(x(l[new_index]), y(l[new_index]));
                     return data;
                 }
 
-                new_index -= l.Count;
+                new_index -= lc;
 
-                if(new_index < s.Count)
+                if(new_index < sc)
                 {
                     data = new Coordinates(x(s[new_index]), y(s[new_index]));
                     return data;
                 }
 
-                new_index -= s.Count;
+                new_index -= sc;
 
                 data = new Coordinates(x(vs[new_index]), y(vs[new_index]));
                 return data;
@@ -87,7 +91,7 @@ namespace CoordinatorViewer
 
         public int Count
         {
-            get { return l.Count + s.Count + vs.Count; }
+            get { return (l?.Count ?? 0) + (s?.Count ?? 0) + (vs?.Count ?? 0); }
         }
 
         public IEnumerator<Coordinates> GetEnumerator()

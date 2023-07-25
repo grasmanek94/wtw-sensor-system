@@ -4,7 +4,7 @@ using ScottPlot;
 
 namespace CoordinatorViewer
 {
-    internal class ScatterPlot
+    internal class ScatterPlot : IDisposable
     {
         private FormsPlot forms_plot { get; set; }
         public Scatter scatter_plot { get; set; }
@@ -40,9 +40,18 @@ namespace CoordinatorViewer
             coordinates.Clear();
         }
 
+        public void Dispose()
+        {
+            Clear();
+            if (forms_plot.Plot.Plottables.Contains(scatter_plot))
+            {
+                forms_plot.Plot.Plottables.Remove(scatter_plot);
+            }
+        }
+
         ~ScatterPlot()
         {
-            forms_plot.Plot.Plottables.Remove(scatter_plot);
+            Dispose();
         }
     }
 }
