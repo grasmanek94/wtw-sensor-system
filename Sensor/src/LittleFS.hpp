@@ -17,6 +17,8 @@ struct global_config {
     String auth_password;
     int interval;
     int manual_calibration_performed;
+    float temp_offset_x;
+    float temp_offset_y;
 };
 
 // define filename to store config file

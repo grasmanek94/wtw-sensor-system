@@ -5,5 +5,7 @@
   "auth_user": "USERNAME",
   "auth_pw": "PASSWORD",
   "interval": "15",
-  "manual_calibration_performed": "1"
+  "manual_calibration_performed": "1",
+  "temp_offset_x": "1.0",
+  "temp_offset_y": "0.0"
 }

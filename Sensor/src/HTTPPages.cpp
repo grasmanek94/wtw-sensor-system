@@ -146,6 +146,8 @@ void http_page_config(AsyncWebServerRequest* request) {
     ADD_OPTION(auth_password, "API Password");
     ADD_OPTION(interval, "Update Interval (s)");
     ADD_OPTION(manual_calibration_performed, "Manual Calibration Performed");
+    ADD_OPTION(temp_offset_x, "X temp offset (Tc = X * Ts + Y)");
+    ADD_OPTION(temp_offset_y, "Y temp offset (Tc = X * Ts + Y)");
 
 #undef ADD_OPTION
 
@@ -177,6 +179,8 @@ void http_api_config(AsyncWebServerRequest* request) {
     PARSE_ENTRY_STR(auth_password);
     PARSE_ENTRY_INT(interval);
     PARSE_ENTRY_INT(manual_calibration_performed);
+    PARSE_ENTRY_FLOAT(temp_offset_x);
+    PARSE_ENTRY_FLOAT(temp_offset_y);
 
 #undef PARSE_ENTRY_FLOAT
 #undef PARSE_ENTRY_INT

@@ -15,7 +15,7 @@
 //#include "src/Sensor_MZH19.hpp"
 //#include "src/Sensor_SHT31.hpp"
 
-#define SENSOR_VERSION "1.4"
+#define SENSOR_VERSION "1.5"
 
 char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");
@@ -150,6 +150,27 @@ void perform_measurements() {
     }
 }
 
+float offset_relative_humidity(float measured_humidity, float measured_temp, float offset_temp) {
+    // https://engineering.stackexchange.com/a/49581/27370
+    const float T1 = measured_temp;
+    const float RH1 = measured_humidity;
+    const float T2 = offset_temp;
+
+    if ((T2 + 273.15f) == 0.0f || 
+        (T1 + 273.15f) == 0.0f || 
+        (T2 + 243.5f) == 0.0f || 
+        (T2 + 273.15f) == 0.0f || 
+        measured_temp == offset_temp) {
+        return RH1;
+    }
+
+    const float M1 = 6.112f * std::exp((17.67f * T1) / (T1 + 243.5f)) * RH1 * 18.02f / ((273.15f + T1) * 100.0f * 0.08314f);
+    const float M2 = M1 / ((T2 + 273.15f) / (T1 + 273.15f));
+    const float RH2 = M2 * std::exp(-(17.67f * T2) / (T2 + 243.5f)) * (0.075487f * T2 + 20.6193f);
+
+    return RH2;
+}
+
 unsigned long uptime_ticks = 0;
 void send_measurements() {
     if (!is_wifi_connected_debug()) {
@@ -160,10 +181,13 @@ void send_measurements() {
     
     ++uptime_ticks;
 
+    float result_temp = global_config_data.temp_offset_x * last_measured_temp + global_config_data.temp_offset_y;
+    float result_rh = offset_relative_humidity(last_measured_rh_value, last_measured_temp, result_temp);
+
     String params = "?deviceId=" + urlEncode(WiFi.macAddress()) +
         "&co2=" + last_measured_co2_ppm +
-        "&rh=" + last_measured_rh_value +
-        "&temp=" + last_measured_temp +
+        "&rh=" + result_rh +
+        "&temp=" + result_temp +
         "&status=" + meter_status + 
         "&seqnr=" + uptime_ticks;
     

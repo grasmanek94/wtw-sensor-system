@@ -9,7 +9,7 @@
      https://github.com/lorol/arduino-esp32littlefs-plugin */
 
 global_config global_config_data;
-const size_t max_document_len = 768;
+const size_t max_document_len = 1024;
 
 static void writeFile(String filename, String message) {
     File file = LittleFS.open(filename, "w");
@@ -76,6 +76,17 @@ static bool readConfig() {
     const int interval = doc["interval"];
     const int manual_calibration_performed = doc["manual_calibration_performed"];
 
+    // added in v1.5
+    const float temp_offset_x =
+        doc.containsKey("temp_offset_x") ?
+        doc["temp_offset_x"] :
+        1.0f;
+
+    const float temp_offset_y =
+        doc.containsKey("temp_offset_y") ?
+        doc["temp_offset_y"] :
+        0.0f;
+
     global_config_data.wifi_ssid = wifi_ssid;
     global_config_data.wifi_password = wifi_password;
     global_config_data.destination_address = destination_address;
@@ -83,6 +94,8 @@ static bool readConfig() {
     global_config_data.auth_password = auth_password;
     global_config_data.interval = interval;
     global_config_data.manual_calibration_performed = manual_calibration_performed;
+    global_config_data.temp_offset_x = temp_offset_x;
+    global_config_data.temp_offset_y = temp_offset_y;
 
     return true;
 }
@@ -98,6 +111,8 @@ static bool saveConfig() {
     doc["auth_pw"] = global_config_data.auth_password;
     doc["interval"] = global_config_data.interval;
     doc["manual_calibration_performed"] = global_config_data.manual_calibration_performed;
+    doc["temp_offset_x"] = global_config_data.temp_offset_x;
+    doc["temp_offset_y"] = global_config_data.temp_offset_y;
 
     // write config file
     String tmp = "";
