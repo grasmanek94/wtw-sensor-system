@@ -259,13 +259,14 @@ void http_page_flash(AsyncWebServerRequest* request) {
     }
 
     request->send_P(200, "text/html", flash_html, http_page_flash_processor);
-    ESP.restart();
 }
 
 void http_api_flash(AsyncWebServerRequest* request) {
     if (!check_auth(request)) {
         return request->requestAuthentication();
     }
+
+    ESP.restart();
 }
 
 void http_api_flash_part(AsyncWebServerRequest* request, String filename, size_t index, uint8_t* data, size_t len, bool final) {
