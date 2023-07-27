@@ -10,8 +10,8 @@
 #include "src/Sensor_Null.hpp"
 
 // Select connected sensors here
-#include "src/Sensor_S8.hpp"
-#include "src/Sensor_SHT4X.hpp"
+//#include "src/Sensor_S8.hpp"
+//#include "src/Sensor_SHT4X.hpp"
 //#include "src/Sensor_MZH19.hpp"
 //#include "src/Sensor_SHT31.hpp"
 
