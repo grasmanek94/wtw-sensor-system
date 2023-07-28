@@ -169,12 +169,12 @@ void process_sensor_data(Sensor_Interface* sensor) {
 
 void perform_measurements() {
     for (auto& sensor : sensors) {
-        //if (sensor->is_present()) {
+        if (sensor->is_present()) {
             sensor->update();
             if (sensor->has_new_data()) {
                 process_sensor_data(sensor);
             }
-        //}
+        }
     }
 }
 
@@ -229,7 +229,7 @@ void send_measurements() {
             measurements[i].last_measured_rh_value;
 
         for (auto& sensor : sensors) {
-            //if (sensor->is_present()) {
+            if (sensor->is_present()) {
                 if (sensor->get_location() == (SENSOR_LOCATION)i) {
                     if (sensor->has_co2_ppm()) {
                         snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&co2[%d]=%d", data_measurements_string, data_index, measurements[i].last_measured_co2_ppm);
@@ -248,7 +248,7 @@ void send_measurements() {
                         snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&status[%d]=%d", data_measurements_string, data_index, measurements[i].meter_status);
                     }
                 }
-            //}
+            }
         }
 
         ++data_index;
