@@ -10,7 +10,7 @@
 #include "src/VentilationState.hpp"
 #include "src/WiFiReconnect.hpp"
 
-#define COORDINATOR_VERSION "1.4"
+#define COORDINATOR_VERSION "1.6"
 
 AsyncWebServer server(80);
 
@@ -110,6 +110,7 @@ void setup() {
     server.on("/get/long", HTTP_GET, http_page_long_data);
 
     server.on("/update", HTTP_POST, http_api_update);
+    server.on("/update", HTTP_GET, http_api_update);
     server.onNotFound(http_page_not_found);
 
     server.on("/heap", HTTP_GET, [](AsyncWebServerRequest* request) {

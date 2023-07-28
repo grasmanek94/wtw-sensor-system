@@ -3,6 +3,7 @@
 
 #include "VentilationState.hpp"
 #include "DeviceData.hpp"
+#include "MeterStatus.hpp"
 
 #include <time.h>
 
@@ -17,9 +18,58 @@ device_data::device_data() :
     // !! safety !! - Occupants present = medium is required. Low is "no occupants".
     current_ventilation_state_co2{ requested_ventilation_state_medium },
     current_ventilation_state_rh{ requested_ventilation_state_medium },
-    latest_measurement{ 0, 0, 0.0f, 0.0f },
-    _tmp_avg{ 0, 0, 0.0f, 0.0f }
+    latest_measurement{ 0, 0, 0, 0, 0, requested_ventilation_state_undefined, 0 },
+    average_measurement{ 0, 0, 0, 0, 0, requested_ventilation_state_undefined, 0 },
+    _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f }
 {}
+
+template<typename T>
+void get_average(T& container, measurement_entry_avg& tmp_avg, measurement_entry& avg) {
+    const size_t size = container.size();
+    
+    avg.set_co2(0);
+    avg.set_rh(0.0f);
+    avg.set_temp(0.0f);
+    avg.sensor_status = 0;
+    avg.sequence_number = 0;
+
+    avg.state_at_this_time = requested_ventilation_state_low;
+
+    tmp_avg.co2_ppm = 0.0f;
+    tmp_avg.relative_humidity = 0.0f;
+    tmp_avg.state_at_this_time = 0.0f;
+    tmp_avg.temperature_c = 0.0f;
+
+    for (int i = 0; i < size; ++i) {
+        tmp_avg.co2_ppm += (float)container[i].get_co2();
+        tmp_avg.relative_humidity += (float)container[i].get_rh();
+        tmp_avg.temperature_c += (float)container[i].get_temp();
+
+        MeterStatusUnion meter_status;
+        MeterStatusUnion meter_status_avg;
+
+        meter_status.combined = container[i].sensor_status;
+        meter_status_avg.combined = avg.sensor_status;
+
+        meter_status_avg.split.meter_status |= meter_status.split.meter_status;
+        meter_status_avg.split.calibration_status = max(meter_status_avg.split.calibration_status, meter_status.split.calibration_status);
+        meter_status_avg.split.abc_status = max(meter_status_avg.split.abc_status, meter_status.split.abc_status);
+        
+        avg.sensor_status = meter_status_avg.combined;
+        
+        tmp_avg.state_at_this_time += (float)container[i].state_at_this_time;
+
+        // oldest time = time of all averages (basically when measurement began)
+        // when using newest times, graph plot lines like to time travel
+        avg.relative_time = min(avg.relative_time, container[i].relative_time);
+        avg.sequence_number = min(avg.sequence_number, container[i].sequence_number);
+    }
+
+    avg.state_at_this_time = (requested_ventilation_state)(int)round(tmp_avg.state_at_this_time /= (float)size);
+    avg.set_co2(tmp_avg.co2_ppm / (float)size);
+    avg.set_rh(tmp_avg.relative_humidity / (float)size);
+    avg.set_temp(tmp_avg.temperature_c / (float)size);
+}
 
 void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
@@ -28,9 +78,9 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, l
     current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_low, global_config_data.rh_medium, global_config_data.rh_high);
 
     latest_measurement.relative_time = now;
-    latest_measurement.co2_ppm = co2_ppm;
-    latest_measurement.rh = rh;
-    latest_measurement.temp_c = temp_c;
+    latest_measurement.set_co2(co2_ppm);
+    latest_measurement.set_rh(rh);
+    latest_measurement.set_temp(temp_c);
     latest_measurement.sensor_status = sensor_status;
     latest_measurement.sequence_number = sequence_number;
     latest_measurement.state_at_this_time = get_highest_ventilation_state(current_ventilation_state_co2, current_ventilation_state_rh);
@@ -41,16 +91,16 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, l
     if (current_very_short_push_count == SENSOR_VERY_SHORT_MEASUREMENT_COUNT) {
         current_very_short_push_count = 0;
 
-        get_average(very_short_data, _tmp_avg);
-        short_data.pushOverwrite(_tmp_avg);
+        get_average(very_short_data, _tmp_avg, average_measurement);
+        short_data.pushOverwrite(average_measurement);
         ++current_short_push_count;
     }
 
     if (current_short_push_count == SENSOR_SHORT_MEASUREMENT_COUNT) {
         current_short_push_count = 0;
 
-        get_average(short_data, _tmp_avg);
-        long_data.pushOverwrite(_tmp_avg);
+        get_average(short_data, _tmp_avg, average_measurement);
+        long_data.pushOverwrite(average_measurement);
     }
 }
 
@@ -58,9 +108,10 @@ bool device_data::is_associated() const {
     return id.length() > 0;
 }
 
-void device_data::associate(String identifier)
+void device_data::associate(String identifier, SENSOR_LOCATION location)
 {
     id = identifier;
+    loc = location;
 }
 
 bool device_data::has_recent_data() const {
@@ -71,11 +122,7 @@ bool device_data::has_recent_data() const {
 }
 
 requested_ventilation_state device_data::get_highest_ventilation_state(requested_ventilation_state a, requested_ventilation_state b) const {
-    if (a > b) {
-        return a;
-    }
-
-    return b;
+    return max(a, b);
 }
 
 
@@ -121,9 +168,9 @@ String measurement_entry::toString() const
 {
     return
         String(relative_time)           + ",\t"
-        + String(co2_ppm)               + ",\t"
-        + String(rh)                    + ",\t"
-        + String(temp_c)                + ",\t"
+        + String(get_co2())             + ",\t"
+        + String(get_rh())              + ",\t"
+        + String(get_temp())            + ",\t"
         + String(sensor_status)         + ",\t"
         + String(sequence_number)       + ",\t"
         + String(state_at_this_time)    + "\n";

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Sensor_Interface.hpp"
+#include "MeterStatus.hpp"
 
 #include <HardwareSerial.h>
 #include <s8_uart.h>
@@ -13,8 +14,8 @@ class Sensor_S8 : public Sensor_Interface {
 public:
 	enum class CALIBRATION_STATUS : uint8_t { // 3 bits
 		UNKNOWN,
-		OK,
 		MANUAL_CALIBRATION_NOT_PERFORMED_YET,
+		OK,		
 		CALIBRATION_SUCCESS_BUT_FAILED_TO_SAVE_TO_DISK,
 		SENSOR_CALIBRATION_FAILED
 	};
@@ -25,14 +26,6 @@ public:
 		FAIL
 	};
 
-	union MeterStatusUnion {
-		struct {
-			uint8_t meter_status : 8;
-			uint8_t calibration_status : 4;
-			uint8_t abc_status : 4;
-		} split;
-		uint16_t combined;
-	};
 
 private:
 	HardwareSerial ss;

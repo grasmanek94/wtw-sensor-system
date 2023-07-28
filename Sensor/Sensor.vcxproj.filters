@@ -64,5 +64,11 @@
     <ClInclude Include="src\constexpr_hash.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\SensorLocation.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\HumidityOffset.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

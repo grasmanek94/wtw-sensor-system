@@ -28,6 +28,9 @@
     <ClCompile Include="src\HTTPPages.cpp">
       <Filter>Misc Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\MeasurementEntry.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\LittleFS.hpp">
@@ -49,5 +52,11 @@
       <Filter>Misc Files</Filter>
     </ClInclude>
     <ClInclude Include="__vm\.Coordinator.vsarduino.h" />
+    <ClInclude Include="src\MeasurementEntry.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SensorLocation.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

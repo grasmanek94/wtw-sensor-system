@@ -43,8 +43,8 @@ int get_device_index(AsyncWebServerRequest* request) {
 }
 
 bool check_auth(AsyncWebServerRequest* request) {
+    return true;
     if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
-        //request->send(HTTP_FORBIDDEN, "text/plain");
         return false;
     }
     return true;
@@ -91,11 +91,32 @@ void http_api_update(AsyncWebServerRequest* request) {
         return;
     }
 
+    long sequence_number = 0;
+
+    param = request->getParam("seqnr");
+    if (param) {
+        sequence_number = param->value().toInt();
+    }
+
+    int params = request->params();
+    for (int i = 0; i < params; i++) {
+        AsyncWebParameter* p = request->getParam(i);
+        if (p->isFile()) { //p->isPost() is also true
+            Serial.printf("FILE[%s]: %s, size: %u\n", p->name().c_str(), p->value().c_str(), p->size());
+        }
+        else if (p->isPost()) {
+            Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+        }
+        else {
+            Serial.printf("GET[%s]: %s\n", p->name().c_str(), p->value().c_str());
+        }
+    }
+
+    param = request->getParam("loc");
     float rh = 0.0f;
     float temp = 0.0f;
     int co2_ppm = 0;
     int sensor_status = 0;
-    long sequence_number = 0;
 
     param = request->getParam("rh");
     if (param) {
@@ -117,10 +138,6 @@ void http_api_update(AsyncWebServerRequest* request) {
         sensor_status = param->value().toInt();
     }
 
-    param = request->getParam("seqnr");
-    if (param) {
-        sequence_number = param->value().toInt();
-    }
 
     sensors[device_index].push(co2_ppm, rh, temp, sensor_status, sequence_number);
 

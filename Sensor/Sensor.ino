@@ -1,5 +1,6 @@
 #include "src/constexpr_hash.hpp"
 #include "src/HTTPPages.hpp"
+#include "src/HumidityOffset.hpp"
 #include "src/LittleFS.hpp"
 #include "src/MyWifi.hpp"
 
@@ -26,6 +27,7 @@ AsyncWebServer server(80);
 
 static unsigned long uptime_ticks = 0;
 static unsigned long next_measurements_send_time = 0;
+static char data_measurements_string[2048]; // 2048 max http GET len
 
 struct LocationMeasurement {
     bool present;
@@ -178,84 +180,10 @@ void perform_measurements() {
     }
 }
 
-float offset_relative_humidity(float measured_humidity, float measured_temp, float offset_temp) {
-    // https://engineering.stackexchange.com/a/49581/27370
-    const float T1 = measured_temp;
-    const float RH1 = measured_humidity;
-    const float T2 = offset_temp;
-
-    if ((T2 + 273.15f) == 0.0f || 
-        (T1 + 273.15f) == 0.0f || 
-        (T2 + 243.5f) == 0.0f || 
-        (T2 + 273.15f) == 0.0f || 
-        measured_temp == offset_temp) {
-        return RH1;
-    }
-
-    const float M1 = 6.112f * std::exp((17.67f * T1) / (T1 + 243.5f)) * RH1 * 18.02f / ((273.15f + T1) * 100.0f * 0.08314f);
-    const float M2 = M1 / ((T2 + 273.15f) / (T1 + 273.15f));
-    const float RH2 = M2 * std::exp(-(17.67f * T2) / (T2 + 243.5f)) * (0.075487f * T2 + 20.6193f);
-
-    return RH2;
-}
-
-char data_measurements_string[1024];
-
-void send_measurements() {
-    if (!is_wifi_connected_debug()) {
-        return;
-    }
-
+void perform_http_request(const char* request) {
     HTTPClient http;
-    
-    ++uptime_ticks;
 
-    snprintf(data_measurements_string, sizeof(data_measurements_string), "http://%s/update?deviceId=%s&seqnr=%d", global_config_data.destination_address.c_str(), urlEncode(WiFi.macAddress()).c_str(), uptime_ticks);
-
-    int data_index = 0;
-    for (int i = 0; i < (int)SENSOR_LOCATION::NUM_LOCATIONS; ++i) {
-        if (!measurements[i].present) {
-            continue;
-        }
-
-        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&loc[%d]=%d", data_measurements_string, data_index, (int)sensors.front()->get_location());
-
-        float result_temp = measurements[i].temp_present ? 
-            global_config_data.temp_offset_x * measurements[i].last_measured_temp + global_config_data.temp_offset_y : 
-            0.0f;
-
-        float result_rh = measurements[i].temp_present ? 
-            offset_relative_humidity(measurements[i].last_measured_rh_value, measurements[i].last_measured_temp, result_temp) :
-            measurements[i].last_measured_rh_value;
-
-        for (auto& sensor : sensors) {
-            if (sensor->is_present()) {
-                if (sensor->get_location() == (SENSOR_LOCATION)i) {
-                    if (sensor->has_co2_ppm()) {
-                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&co2[%d]=%d", data_measurements_string, data_index, measurements[i].last_measured_co2_ppm);
-                    }
-
-                    if (sensor->has_temperature()) {
-                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&temp[%d]=%.1f", data_measurements_string, data_index, result_temp);
-                    }
-
-                    if (sensor->has_relative_humidity()) {
-                        Serial.println(result_rh);
-                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&rh[%d]=%.0f", data_measurements_string, data_index, result_rh);
-                    }
-
-                    if (sensor->has_meter_status()) {
-                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&status[%d]=%d", data_measurements_string, data_index, measurements[i].meter_status);
-                    }
-                }
-            }
-        }
-
-        ++data_index;
-    }
-    
-    Serial.println(data_measurements_string);
-    http.begin(data_measurements_string);
+    http.begin(request);
     http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
     http.setTimeout(20);
 
@@ -275,6 +203,85 @@ void send_measurements() {
     }
 
     http.end();
+}
+
+bool fill_location_data(int location_index, int data_index, char* buffer, size_t buffer_size) {
+    bool send = false;
+
+    snprintf(buffer, buffer_size, "%s&loc=%d", buffer, data_index, (int)sensors.front()->get_location());
+
+    float result_temp = measurements[location_index].temp_present ?
+        global_config_data.temp_offset_x * measurements[location_index].last_measured_temp + global_config_data.temp_offset_y :
+        0.0f;
+
+    float result_rh = measurements[location_index].temp_present ?
+        offset_relative_humidity(measurements[location_index].last_measured_rh_value, measurements[location_index].last_measured_temp, result_temp) :
+        measurements[location_index].last_measured_rh_value;
+
+    for (auto& sensor : sensors) {
+        if (sensor->is_present()) {
+            if (sensor->get_location() == (SENSOR_LOCATION)location_index) {
+                if (sensor->has_co2_ppm()) {
+                    send = true;
+                    snprintf(buffer, buffer_size, "%s&co2[%d]=%d", buffer, data_index, measurements[location_index].last_measured_co2_ppm);
+                }
+
+                if (sensor->has_temperature()) {
+                    send = true;
+                    snprintf(buffer, buffer_size, "%s&temp[%d]=%.1f", buffer, data_index, result_temp);
+                }
+
+                if (sensor->has_relative_humidity()) {
+                    send = true;
+                    snprintf(buffer, buffer_size, "%s&rh[%d]=%.1f", buffer, data_index, result_rh);
+                }
+
+                if (sensor->has_meter_status()) {
+                    send = true;
+                    snprintf(buffer, buffer_size, "%s&status[%d]=%d", buffer, data_index, measurements[location_index].meter_status);
+                }
+            }
+        }
+    }
+
+    return send;
+}
+
+void send_measurements() {
+    if (!is_wifi_connected_debug()) {
+        return;
+    }
+
+    uint8_t mac[6];
+    bool send = false;
+    int data_index = 0;
+
+    ++uptime_ticks;
+
+    WiFi.macAddress(mac);
+
+    snprintf(data_measurements_string, sizeof(data_measurements_string), "http://%s/update?deviceId=%02X%02X%02X%02X%02X%02X&seqnr=%d", global_config_data.destination_address.c_str(), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], uptime_ticks);
+
+    for (int i = 0; i < (int)SENSOR_LOCATION::NUM_LOCATIONS; ++i) {
+        if (!measurements[i].present) {
+            continue;
+        }
+
+        if (fill_location_data(i, data_index, data_measurements_string, sizeof(data_measurements_string))) {
+            send = true;
+            measurements[i].present = false;
+        }
+
+        ++data_index;
+    }
+    
+    Serial.println(data_measurements_string);
+
+    if (!send) {
+        return;
+    }
+
+    perform_http_request(data_measurements_string);
 }
 
 void check_measurements() {
