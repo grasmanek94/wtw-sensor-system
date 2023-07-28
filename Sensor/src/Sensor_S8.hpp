@@ -11,7 +11,7 @@
 
 class Sensor_S8 : public Sensor_Interface {
 public:
-	enum class CALIBRATION_STATUS {
+	enum class CALIBRATION_STATUS : uint8_t { // 3 bits
 		UNKNOWN,
 		OK,
 		MANUAL_CALIBRATION_NOT_PERFORMED_YET,
@@ -19,10 +19,19 @@ public:
 		SENSOR_CALIBRATION_FAILED
 	};
 
-	enum class ABC_STATUS {
+	enum class ABC_STATUS: uint8_t { // 2 bits
 		UNKNOWN,
 		OK,
 		FAIL
+	};
+
+	union MeterStatusUnion {
+		struct {
+			uint8_t meter_status : 8;
+			uint8_t calibration_status : 4;
+			uint8_t abc_status : 4;
+		} split;
+		uint16_t combined;
 	};
 
 private:
@@ -37,6 +46,7 @@ private:
 	CALIBRATION_STATUS calibration_status;
 	ABC_STATUS abc_status;
 	unsigned long perform_manual_calibration_time;
+	SENSOR_LOCATION location;
 
 	const unsigned long meassurement_elapsed_millis = 4000;
 	const unsigned long perform_manual_calibration_after_ms = 5 * 60 * 1000; // 5 min
@@ -44,7 +54,7 @@ private:
 
 public:
 
-	Sensor_S8(int hardware_serial_nr = 2);
+	Sensor_S8(int hardware_serial_nr = 2, SENSOR_LOCATION location = SENSOR_LOCATION::UNKNOWN);
 	virtual ~Sensor_S8();
 
 	virtual void setup() override;
@@ -64,4 +74,5 @@ public:
 	ABC_STATUS get_abc_status() const;
 
 	virtual const char* const get_name() const override;
+	virtual SENSOR_LOCATION get_location() const override;
 };

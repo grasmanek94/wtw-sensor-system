@@ -7,5 +7,30 @@
   "interval": "15",
   "manual_calibration_performed": "1",
   "temp_offset_x": "1.0",
-  "temp_offset_y": "0.0"
+  "temp_offset_y": "0.0",
+  "sensors": [
+    {
+       "type": "S8",
+       "hw_uart_nr": "2",
+       "location": "0"
+    },
+    {
+       "type": "SHT4X",
+       "sda": "15",
+       "scl": "4",
+       "precision": "0",
+       "location": "0"
+    },
+    {
+       "type": "SHT31",
+       "sda": "23",
+       "scl": "22",
+       "location": "0"
+    },
+    {
+       "type": "MHZ19",
+       "hw_uart_nr": "3",
+       "location": "0"
+    }
+  ]
 }

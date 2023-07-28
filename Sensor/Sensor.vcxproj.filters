@@ -61,7 +61,7 @@
       <Filter>Misc Files</Filter>
     </ClInclude>
     <ClInclude Include="__vm\.Sensor.vsarduino.h" />
-    <ClInclude Include="src\Sensor_Null.hpp">
+    <ClInclude Include="src\constexpr_hash.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,24 +4,32 @@
 
 #include <s8_uart.h>
 
-Sensor_S8::Sensor_S8(int hardware_serial_nr):
-	Sensor_Interface{}, ss{ hardware_serial_nr }, uart{}, data{},
+Sensor_S8::Sensor_S8(int hardware_serial_nr, SENSOR_LOCATION location):
+	Sensor_Interface{}, ss{ hardware_serial_nr }, uart{nullptr}, data{},
 	found{false}, last_measurement_time{ 0 }, new_measurement_available{ false }, 
     manual_calibration_failure {false}, calibration_status{ CALIBRATION_STATUS::UNKNOWN },
-    abc_status{ ABC_STATUS::UNKNOWN }, perform_manual_calibration_time{ 0 }
+    abc_status{ ABC_STATUS::UNKNOWN }, perform_manual_calibration_time{ 0 }, location{ location }
 {
-    data.co2 = -1;
-    data.meter_status = 0xFF;
+    data.co2 = 0;
+    data.meter_status = 0;
 }
 
 Sensor_S8::~Sensor_S8()
 {
-    delete uart;
-    uart = nullptr;
+    if (uart != nullptr) {
+        delete uart;
+        uart = nullptr;
+    }
 }
 
 void Sensor_S8::setup()
-{
+{  
+    if (uart != nullptr) {
+        ss.end();
+        delete uart;
+        uart = nullptr;
+    }
+
     ss.begin(S8_BAUDRATE);
     uart = new S8_UART(ss);
 
@@ -175,7 +183,13 @@ bool Sensor_S8::has_meter_status() const
 
 int Sensor_S8::get_meter_status()
 {
-	return data.meter_status;
+    MeterStatusUnion result;
+    result.combined = 0;
+    result.split.meter_status = (uint8_t)data.meter_status;
+    result.split.calibration_status = (uint8_t)calibration_status;
+    result.split.abc_status = (uint8_t)abc_status;
+
+	return result.combined;
 }
 
 bool Sensor_S8::is_calibrated() const {
@@ -214,4 +228,8 @@ const char* const Sensor_S8::get_name() const
 
 bool Sensor_S8::is_present() const {
     return found;
+}
+
+SENSOR_LOCATION Sensor_S8::get_location() const {
+    return location;
 }

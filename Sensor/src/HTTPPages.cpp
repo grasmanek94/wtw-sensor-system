@@ -8,18 +8,6 @@
 extern char* SENSOR_VERSION_STR;
 extern String SENSORS_LIST_STR;
 
-bool check_auth(AsyncWebServerRequest* request) {
-    if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
-        //request->send(HTTP_FORBIDDEN, "text/plain");
-        return false;
-    }
-    return true;
-}
-
-void http_page_not_found(AsyncWebServerRequest* request) {
-    request->send(404, "text/plain", "Not found");
-}
-
 const char flash_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html lang="en">
@@ -33,6 +21,36 @@ const char flash_html[] PROGMEM = R"rawliteral(
 </body>
 </html>
 )rawliteral";
+
+const char config_html_start[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+</head>
+<body>
+    <form action="/config" method="post">
+)rawliteral";
+
+const char config_html_end[] PROGMEM = R"rawliteral(
+      <input type="submit" value="Save + Reset ESP32">
+    </form>
+</body>
+</html>
+)rawliteral";
+
+bool check_auth(AsyncWebServerRequest* request) {
+    if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
+        //request->send(HTTP_FORBIDDEN, "text/plain");
+        return false;
+    }
+    return true;
+}
+
+void http_page_not_found(AsyncWebServerRequest* request) {
+    request->send(404, "text/plain", "Not found");
+}
 
 String http_page_flash_processor(const String& var) {
     if (var == "SENSOR_VERSION") {
@@ -90,24 +108,6 @@ void http_api_flash_part(AsyncWebServerRequest* request, String filename, size_t
     }
 }
 
-const char config_html_start[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML>
-<html lang="en">
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta charset="UTF-8">
-</head>
-<body>
-    <form action="/config" method="post">
-)rawliteral";
-
-const char config_html_end[] PROGMEM = R"rawliteral(
-      <input type="submit" value="Save + Reset ESP32">
-    </form>
-</body>
-</html>
-)rawliteral";
-
 String html_encode(String data) {
     const char* p = data.c_str();
     String rv = "";
@@ -131,6 +131,11 @@ String add_form_label(String id, String name, String value) {
         "<input type=\"text\" id=\"" + id + "\" name=\"" + id + "\" value=\"" + html_encode(value) + "\"><br>\n";
 }
 
+String add_form_label_textarea(String id, String name, String value) {
+    return "<label for=\"" + id + "\">" + name + ":</label><br>\n"
+        "<textarea id=\"" + id + "\" name=\"" + id + "\" cols=\"100\" rows=\"50\">" + html_encode(value) + "</textarea><br>\n";
+}
+
 void http_page_config(AsyncWebServerRequest* request) {
     if (!check_auth(request)) {
         return request->requestAuthentication();
@@ -139,9 +144,11 @@ void http_page_config(AsyncWebServerRequest* request) {
     String html(config_html_start);
 
 #define ADD_OPTION(name, description)  html += add_form_label(#name, description, String(global_config_data. name))
+#define ADD_OPTION_FUNC(name, description)  html += add_form_label(#name, description, String(global_config_data.get_##name()))
+#define ADD_OPTION_FUNC_ML(name, description)  html += add_form_label_textarea(#name, description, String(global_config_data.get_##name()))
 
-    ADD_OPTION(wifi_ssid, "WiFi SSID");
-    ADD_OPTION(wifi_password, "WiFi Passsword");
+    ADD_OPTION_FUNC(wifi_ssid, "WiFi SSID");
+    ADD_OPTION_FUNC(wifi_password, "WiFi Passsword");
     ADD_OPTION(destination_address, "Destination Address");
     ADD_OPTION(auth_user, "API User");
     ADD_OPTION(auth_password, "API Password");
@@ -149,7 +156,10 @@ void http_page_config(AsyncWebServerRequest* request) {
     ADD_OPTION(manual_calibration_performed, "Manual Calibration Performed");
     ADD_OPTION(temp_offset_x, "X temp offset (Tc = X * Ts + Y)");
     ADD_OPTION(temp_offset_y, "Y temp offset (Tc = X * Ts + Y)");
+    ADD_OPTION_FUNC_ML(sensors, "Sensors Configuration");
 
+#undef ADD_OPTION_FUNC_ML
+#undef ADD_OPTION_FUNC
 #undef ADD_OPTION
 
     html += config_html_end;
@@ -164,18 +174,26 @@ void http_api_config(AsyncWebServerRequest* request) {
 
 #define PARSE_ENTRY(name, conversion) param = request->getParam(#name, true); \
     if (!param) { \
-        return request->send(HTTP_BAD_REQUEST, "text/html", "!wifi_ssid"); \
+        return request->send(HTTP_BAD_REQUEST, "text/html", "!" #name); \
     } \
     global_config_data. name = param->value() conversion; \
     Serial.println(global_config_data. name)
 
+#define PARSE_ENTRY_FUNC(name, conversion) param = request->getParam(#name, true); \
+    if (!param) { \
+        return request->send(HTTP_BAD_REQUEST, "text/html", "!" #name); \
+    } \
+    global_config_data.set_##name(param->value() conversion); \
+    Serial.println(global_config_data.get_##name())
+
+#define PARSE_ENTRY_STR_FUNC(name) PARSE_ENTRY_FUNC(name, )
 #define PARSE_ENTRY_STR(name) PARSE_ENTRY(name, )
 #define PARSE_ENTRY_INT(name) PARSE_ENTRY(name, .toInt())
 #define PARSE_ENTRY_FLOAT(name) PARSE_ENTRY(name, .toFloat())
 
     AsyncWebParameter* param = nullptr;
-    PARSE_ENTRY_STR(wifi_ssid);
-    PARSE_ENTRY_STR(wifi_password);
+    PARSE_ENTRY_STR_FUNC(wifi_ssid);
+    PARSE_ENTRY_STR_FUNC(wifi_password);
     PARSE_ENTRY_STR(destination_address);
     PARSE_ENTRY_STR(auth_user);
     PARSE_ENTRY_STR(auth_password);
@@ -183,10 +201,13 @@ void http_api_config(AsyncWebServerRequest* request) {
     PARSE_ENTRY_INT(manual_calibration_performed);
     PARSE_ENTRY_FLOAT(temp_offset_x);
     PARSE_ENTRY_FLOAT(temp_offset_y);
+    PARSE_ENTRY_STR_FUNC(sensors);
 
 #undef PARSE_ENTRY_FLOAT
 #undef PARSE_ENTRY_INT
 #undef PARSE_ENTRY_STR
+#undef PARSE_ENTRY_STR_FUNC
+#undef PARSE_ENTRY_FUNC
 #undef PARSE_ENTRY
 
     littlefs_write_config();

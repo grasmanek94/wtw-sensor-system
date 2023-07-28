@@ -1,6 +1,6 @@
 #pragma once
 
-enum requested_ventilation_state {
+enum requested_ventilation_state: uint8_t {
     requested_ventilation_state_undefined,
     requested_ventilation_state_low,
     requested_ventilation_state_medium,

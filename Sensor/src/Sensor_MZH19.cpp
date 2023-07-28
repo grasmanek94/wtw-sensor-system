@@ -1,16 +1,14 @@
 #include "Sensor_MZH19.hpp"
 
-Sensor_MHZ19::Sensor_MHZ19(bool auto_calibration, int hardware_serial_nr) :
+Sensor_MHZ19::Sensor_MHZ19(bool auto_calibration, int hardware_serial_nr, SENSOR_LOCATION location) :
 	Sensor_Interface{}, auto_calibration{ auto_calibration},
 	ss{ hardware_serial_nr }, mhz{}, last_measured_temp{ -273.15f },
 	last_measured_co2_ppm{ -1 }, last_measurement_time{ 0 },
-	new_measurement_available{ false }
-{
-}
+	new_measurement_available{ false }, location{ location }
+{}
 
 Sensor_MHZ19::~Sensor_MHZ19()
-{
-}
+{}
 
 void Sensor_MHZ19::setup()
 {
@@ -70,4 +68,8 @@ int Sensor_MHZ19::get_co2_ppm()
 
 const char* const Sensor_MHZ19::get_name() const {
 	return "MHZ19C";
+}
+
+SENSOR_LOCATION Sensor_MHZ19::get_location() const {
+	return location;
 }

@@ -13,10 +13,10 @@ const size_t SENSOR_SHORT_MEASUREMENT_COUNT = SENSOR_SHORT_MEASUREMENT_PERIOD / 
 const size_t SENSOR_LONG_MEASUREMENT_COUNT = SENSOR_LONG_MEASUREMENT_PERIOD / SENSOR_SHORT_MEASUREMENT_PERIOD;
 
 struct measurement_entry {
-    unsigned long relative_time;
-    int co2_ppm;
-    float rh;
-    float temp_c;
+    uint32_t relative_time;
+    uint16_t co2_ppm: 11; // 11 bits 0..2047
+    uint16_t relative_humidity: 10; // 10 bits 0..1023 (divide by 10 to get RH%) 
+    int16_t temperature_c : 10; // 10 bits 0..1023 each step is 0.1 *C -51.2 to +51.2
     long sensor_status;
     requested_ventilation_state state_at_this_time;
     unsigned long sequence_number;

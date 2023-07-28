@@ -4,6 +4,9 @@
 #include <WiFi.h>
 #include <lwip/dns.h>
 
+static const unsigned long max_wifi_timeout_until_reconnect = 15000;
+static unsigned long require_wifi_reconnect_time = 0;
+
 void init_wifi() {
 
     String mac = WiFi.macAddress();
@@ -19,10 +22,10 @@ void init_wifi() {
     WiFi.setHostname(mac.c_str());
 
     WiFi.mode(WIFI_STA);
-    WiFi.begin(global_config_data.wifi_ssid, global_config_data.wifi_password);
+    WiFi.begin(global_config_data.get_wifi_ssid(), global_config_data.get_wifi_password());
 
     Serial.print("Connecting to WiFi '");
-    Serial.print(global_config_data.wifi_ssid);
+    Serial.print(global_config_data.get_wifi_ssid());
     Serial.print("' ..");
 
     while (WiFi.status() != WL_CONNECTED) {
@@ -36,9 +39,6 @@ void init_wifi() {
         Serial.println("Error setting up MDNS responder!");
     }
 }
-
-static const unsigned long max_wifi_timeout_until_reconnect = 15000;
-static unsigned long require_wifi_reconnect_time = 0;
 
 void check_wifi() {
     unsigned long now = millis();

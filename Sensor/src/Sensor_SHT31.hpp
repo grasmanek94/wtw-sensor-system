@@ -18,9 +18,10 @@ private:
 	float last_measured_rh_value;
 	float last_measured_temp;
 	bool new_measurement_available;
+	SENSOR_LOCATION location;
 
 public:
-	Sensor_SHT31(int i2c_sda_pin = 23, int i2c_scl_pin = 22);
+	Sensor_SHT31(int i2c_sda_pin = 23, int i2c_scl_pin = 22, SENSOR_LOCATION location = SENSOR_LOCATION::UNKNOWN);
 	virtual ~Sensor_SHT31();
 
 	virtual void setup() override;
@@ -33,4 +34,5 @@ public:
 	virtual float get_relative_humidity() override;
 
 	virtual const char* const get_name() const override;
+	virtual SENSOR_LOCATION get_location() const override;
 };

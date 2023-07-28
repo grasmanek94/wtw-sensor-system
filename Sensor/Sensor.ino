@@ -1,48 +1,108 @@
-#include <ESPAsyncWebSrv.h>
-#include <HTTPClient.h>
-#include <UrlEncode.h>
-#include <WiFi.h>
-
+#include "src/constexpr_hash.hpp"
 #include "src/HTTPPages.hpp"
 #include "src/LittleFS.hpp"
 #include "src/MyWifi.hpp"
 
-#include "src/Sensor_Null.hpp"
-
-// Select connected sensors here
-//#include "src/Sensor_S8.hpp"
-//#include "src/Sensor_SHT4X.hpp"
+// Select sensors which can be configured in json here
+///////////////////////////////////////////////////////
+#include "src/Sensor_S8.hpp"
+#include "src/Sensor_SHT4X.hpp"
 //#include "src/Sensor_MZH19.hpp"
-//#include "src/Sensor_SHT31.hpp"
+#include "src/Sensor_SHT31.hpp"
+///////////////////////////////////////////////////////
 
-#define SENSOR_VERSION "1.5"
+#include <ESPAsyncWebSrv.h>
+#include <HTTPClient.h>
+#include <UrlEncode.h>
+#include <WiFi.h>
+#include <Vector.h>
+
+#include <Wire.h>
+#define SENSOR_VERSION "1.6"
 
 char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");
 AsyncWebServer server(80);
 
-Sensor_Interface* sensors[] = 
-{ 
+static unsigned long uptime_ticks = 0;
+static unsigned long next_measurements_send_time = 0;
+
+struct LocationMeasurement {
+    bool present;
+    int last_measured_co2_ppm;
+    float last_measured_rh_value;
+    float last_measured_temp ;
+    int meter_status;
+    bool temp_present;
+
+    LocationMeasurement() :
+        present{ false },
+        last_measured_co2_ppm{ 0 },
+        last_measured_rh_value{ 0.0f },
+        last_measured_temp{ 0.0f },
+        meter_status{ 0 },
+        temp_present{ false }
+    {}
+};
+
+const int MAX_SENSOR_INTERFACES_COUNT = 2;
+Sensor_Interface* sensors_array[MAX_SENSOR_INTERFACES_COUNT];
+Vector<Sensor_Interface*> sensors(sensors_array);
+
+// inefficient but easier and faster
+LocationMeasurement measurements[(int)SENSOR_LOCATION::NUM_LOCATIONS];
+
+sensor_entry_callback switcher{
+    [&](const String& type, const JsonVariant& value) {
+        switch (constexpr_hash::hash(type)) {
 #ifdef SENSOR_INTERFACE_S8_INCLUDED
-    new Sensor_S8(), 
+        case "S8"_hash: {
+            int location = value["location"];
+            int hw_uart = value["hw_uart_nr"];
+
+            sensors.push_back(new Sensor_S8(hw_uart, (SENSOR_LOCATION)location));
+            break;
+        }
 #endif
 #ifdef SENSOR_INTERFACE_SHT4X_INCLUDED
-    new Sensor_SHT4X(),
+        case "SHT4X"_hash: {
+            int location = value["location"];
+            int sda = value["sda"];
+            int scl = value["scl"];
+            int precision = value["precision"];
+
+            sensors.push_back(new Sensor_SHT4X(sda, scl, (sht4x_precision_t)precision, (SENSOR_LOCATION)location));
+            break;
+        }
 #endif
 #ifdef SENSOR_INTERFACE_SHT31_INCLUDED
-    new Sensor_SHT31(),
+        case "SHT31"_hash: {
+            int location = value["location"];
+            int sda = value["sda"];
+            int scl = value["scl"];
+
+            sensors.push_back(new Sensor_SHT31(sda, scl, (SENSOR_LOCATION)location));
+            break;
+        }
 #endif
 #ifdef SENSOR_INTERFACE_MHZ19_INCLUDED
-    new Sensor_MHZ19(),
+        case "MHZ19"_hash: {
+            int location = value["location"];
+            int hw_uart = value["hw_uart_nr"];
+
+            sensors.push_back(new Sensor_MHZ19(hw_uart, (SENSOR_LOCATION)location));
+            break;
+        }
 #endif
-    new Sensor_Null()
+        }
+    }
 };
 
 void setup() {
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
 
-    if (!littlefs_read_config()) {
+    if (!littlefs_read_config(switcher)) {
         while (true) {
             Serial.println(F("Stalled"));
             delay(10000);
@@ -84,69 +144,37 @@ void print_measurements() {
     }
 }
 
-int last_measured_co2_ppm = 0;
-float last_measured_rh_value = 0.0f;
-float last_measured_temp = 0.0f;
-int meter_status =
-                    #ifdef SENSOR_INTERFACE_S8_INCLUDED
-                    0xFF
-                    #else
-                    0x00
-                    #endif
-                    ;
-
 void process_sensor_data(Sensor_Interface* sensor) {
     if (sensor->has_co2_ppm()) {
-        last_measured_co2_ppm = sensor->get_co2_ppm();
+        measurements[(int)sensor->get_location()].present = true;
+        measurements[(int)sensor->get_location()].last_measured_co2_ppm = sensor->get_co2_ppm();
     }
 
     if (sensor->has_temperature()) {
-        last_measured_temp = sensor->get_temperature();
+        measurements[(int)sensor->get_location()].present = true;
+        measurements[(int)sensor->get_location()].temp_present = true;
+        measurements[(int)sensor->get_location()].last_measured_temp = sensor->get_temperature();
     }
 
     if (sensor->has_relative_humidity()) {
-        last_measured_rh_value = sensor->get_relative_humidity();
+        measurements[(int)sensor->get_location()].present = true;
+        measurements[(int)sensor->get_location()].last_measured_rh_value = sensor->get_relative_humidity();
     }
 
     if (sensor->has_meter_status()) {
-        meter_status = sensor->get_meter_status();
+        measurements[(int)sensor->get_location()].present = true;
+        measurements[(int)sensor->get_location()].meter_status = sensor->get_meter_status();
     }
-
-#ifdef SENSOR_INTERFACE_S8_INCLUDED
-    if (sensor->get_name() == "S8") { // dynamic_cast unavailable
-        Sensor_S8* sensor_s8 = static_cast<Sensor_S8*>(sensor);
-        if (sensor_s8 != nullptr) {
-            auto calibration_status = sensor_s8->get_calibration_error();
-            if (sensor_s8->get_abc_status() == Sensor_S8::ABC_STATUS::FAIL) {
-                meter_status |= 0x10000000;
-            }
-            switch (calibration_status) {
-            case Sensor_S8::CALIBRATION_STATUS::CALIBRATION_SUCCESS_BUT_FAILED_TO_SAVE_TO_DISK:
-                meter_status |= 0x20000000;
-                break;
-
-            case Sensor_S8::CALIBRATION_STATUS::MANUAL_CALIBRATION_NOT_PERFORMED_YET:
-                meter_status |= 0x40000000;
-                break;
-
-            case Sensor_S8::CALIBRATION_STATUS::SENSOR_CALIBRATION_FAILED:
-                meter_status |= 0x80000000;
-                break;
-            }
-        }
-    }
-#endif
 }
 
 void perform_measurements() {
     for (auto& sensor : sensors) {
-        if (sensor->is_present()) {
+        //if (sensor->is_present()) {
             sensor->update();
             if (sensor->has_new_data()) {
                 process_sensor_data(sensor);
-
             }
-        }
+        //}
     }
 }
 
@@ -171,7 +199,8 @@ float offset_relative_humidity(float measured_humidity, float measured_temp, flo
     return RH2;
 }
 
-unsigned long uptime_ticks = 0;
+char data_measurements_string[1024];
+
 void send_measurements() {
     if (!is_wifi_connected_debug()) {
         return;
@@ -181,17 +210,52 @@ void send_measurements() {
     
     ++uptime_ticks;
 
-    float result_temp = global_config_data.temp_offset_x * last_measured_temp + global_config_data.temp_offset_y;
-    float result_rh = offset_relative_humidity(last_measured_rh_value, last_measured_temp, result_temp);
+    snprintf(data_measurements_string, sizeof(data_measurements_string), "http://%s/update?deviceId=%s&seqnr=%d", global_config_data.destination_address.c_str(), urlEncode(WiFi.macAddress()).c_str(), uptime_ticks);
 
-    String params = "?deviceId=" + urlEncode(WiFi.macAddress()) +
-        "&co2=" + last_measured_co2_ppm +
-        "&rh=" + result_rh +
-        "&temp=" + result_temp +
-        "&status=" + meter_status + 
-        "&seqnr=" + uptime_ticks;
+    int data_index = 0;
+    for (int i = 0; i < (int)SENSOR_LOCATION::NUM_LOCATIONS; ++i) {
+        if (!measurements[i].present) {
+            continue;
+        }
+
+        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&loc[%d]=%d", data_measurements_string, data_index, (int)sensors.front()->get_location());
+
+        float result_temp = measurements[i].temp_present ? 
+            global_config_data.temp_offset_x * measurements[i].last_measured_temp + global_config_data.temp_offset_y : 
+            0.0f;
+
+        float result_rh = measurements[i].temp_present ? 
+            offset_relative_humidity(measurements[i].last_measured_rh_value, measurements[i].last_measured_temp, result_temp) :
+            measurements[i].last_measured_rh_value;
+
+        for (auto& sensor : sensors) {
+            //if (sensor->is_present()) {
+                if (sensor->get_location() == (SENSOR_LOCATION)i) {
+                    if (sensor->has_co2_ppm()) {
+                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&co2[%d]=%d", data_measurements_string, data_index, measurements[i].last_measured_co2_ppm);
+                    }
+
+                    if (sensor->has_temperature()) {
+                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&temp[%d]=%.1f", data_measurements_string, data_index, result_temp);
+                    }
+
+                    if (sensor->has_relative_humidity()) {
+                        Serial.println(result_rh);
+                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&rh[%d]=%.0f", data_measurements_string, data_index, result_rh);
+                    }
+
+                    if (sensor->has_meter_status()) {
+                        snprintf(data_measurements_string, sizeof(data_measurements_string), "%s&status[%d]=%d", data_measurements_string, data_index, measurements[i].meter_status);
+                    }
+                }
+            //}
+        }
+
+        ++data_index;
+    }
     
-    http.begin("http://" + global_config_data.destination_address + "/update" + params);
+    Serial.println(data_measurements_string);
+    http.begin(data_measurements_string);
     http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
     http.setTimeout(20);
 
@@ -212,8 +276,6 @@ void send_measurements() {
 
     http.end();
 }
-
-static unsigned long next_measurements_send_time = 0;
 
 void check_measurements() {
     unsigned long now = millis();

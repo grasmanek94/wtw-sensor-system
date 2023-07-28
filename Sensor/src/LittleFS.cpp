@@ -9,7 +9,37 @@
      https://github.com/lorol/arduino-esp32littlefs-plugin */
 
 global_config global_config_data;
-const size_t max_document_len = 1024;
+const size_t max_document_len = 2048;
+static StaticJsonDocument<max_document_len> doc;
+
+String global_config::get_wifi_ssid() {
+    return doc["wifi_id"].as<String>();
+}
+
+void global_config::set_wifi_ssid(const String& wifi_ssid) {
+    doc["wifi_id"] = wifi_ssid;
+}
+
+String global_config::get_wifi_password() {
+    return doc["wifi_pw"].as<String>();
+}
+
+void global_config::set_wifi_password(const String& wifi_password) {
+    doc["wifi_pw"] = wifi_password;
+}
+
+String global_config::get_sensors() {
+    String result;
+    serializeJsonPretty(doc["sensors"], result);
+    return result;
+}
+
+void global_config::set_sensors(const String& sensors) {
+    DynamicJsonDocument sensors_json(max_document_len/4);
+
+    deserializeJson(sensors_json, sensors);
+    doc["sensors"] = sensors_json;
+}
 
 static void writeFile(String filename, String message) {
     File file = LittleFS.open(filename, "w");
@@ -42,13 +72,13 @@ static String readFile(String filename) {
         fileText += file.readString();
     }
 
-    //Serial.println(fileText);
+    Serial.println(fileText);
     file.close();
-    Serial.println(file.size());
+    
     return fileText;
 }
 
-static bool readConfig() {
+static bool readConfig(const sensor_entry_callback& switcher) {
 
     String file_content = readFile(global_config_filename);
 
@@ -60,7 +90,6 @@ static bool readConfig() {
         return false;
     }
 
-    StaticJsonDocument<max_document_len> doc;
     auto error = deserializeJson(doc, file_content);
     if (error) {
         Serial.println("Error interpreting config file");
@@ -68,44 +97,32 @@ static bool readConfig() {
         return false;
     }
 
-    const String wifi_ssid = doc["wifi_id"];
-    const String wifi_password = doc["wifi_pw"];
-    const String destination_address = doc["destination"];
-    const String auth_user = doc["auth_user"];
-    const String auth_password = doc["auth_pw"];
-    const int interval = doc["interval"];
-    const int manual_calibration_performed = doc["manual_calibration_performed"];
+    global_config_data.destination_address = doc["destination"].as<String>();
+    global_config_data.auth_user = doc["auth_user"].as<String>();
+    global_config_data.auth_password = doc["auth_pw"].as<String>();
+    global_config_data.interval = doc["interval"].as<int>();
+    global_config_data.manual_calibration_performed = doc["manual_calibration_performed"].as<bool>();
 
     // added in v1.5
-    const float temp_offset_x =
+    global_config_data.temp_offset_x =
         doc.containsKey("temp_offset_x") ?
         doc["temp_offset_x"] :
         1.0f;
 
-    const float temp_offset_y =
+    global_config_data.temp_offset_y =
         doc.containsKey("temp_offset_y") ?
         doc["temp_offset_y"] :
         0.0f;
 
-    global_config_data.wifi_ssid = wifi_ssid;
-    global_config_data.wifi_password = wifi_password;
-    global_config_data.destination_address = destination_address;
-    global_config_data.auth_user = auth_user;
-    global_config_data.auth_password = auth_password;
-    global_config_data.interval = interval;
-    global_config_data.manual_calibration_performed = manual_calibration_performed;
-    global_config_data.temp_offset_x = temp_offset_x;
-    global_config_data.temp_offset_y = temp_offset_y;
+    for (JsonVariant value : doc["sensors"].as<JsonArray>()) {
+        switcher(value["type"].as<String>(), value);
+    }
 
     return true;
 }
 
 static bool saveConfig() {
-    StaticJsonDocument<max_document_len> doc;
-
     // write variables to JSON file
-    doc["wifi_id"] = global_config_data.wifi_ssid;
-    doc["wifi_pw"] = global_config_data.wifi_password;
     doc["destination"] = global_config_data.destination_address;
     doc["auth_user"] = global_config_data.auth_user;
     doc["auth_pw"] = global_config_data.auth_password;
@@ -122,7 +139,7 @@ static bool saveConfig() {
     return true;
 }
 
-bool littlefs_read_config() {
+bool littlefs_read_config(const sensor_entry_callback& switcher) {
     // Mount LITTLEFS and read in config file
     if (!LittleFS.begin(false)) {
         Serial.println("LITTLEFS Mount Failed - Formatting...");
@@ -140,7 +157,7 @@ bool littlefs_read_config() {
         Serial.print('/');
         Serial.println(LittleFS.totalBytes());
 
-        if (readConfig() == false) {
+        if (readConfig(switcher) == false) {
             Serial.println("LITTLEFS Config Load Failed");
         }
         else {

@@ -8,22 +8,32 @@
 #include "FS.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <functional>
 
 struct global_config {
-    String wifi_ssid;
-    String wifi_password;
+    String get_wifi_ssid();
+    void set_wifi_ssid(const String& wifi_ssid);
+
+    String get_wifi_password();
+    void set_wifi_password(const String& wifi_password);
+
+    String get_sensors();
+    void set_sensors(const String& sensors);
+
+    // frequently used stuff = cached
     String destination_address;
     String auth_user;
     String auth_password;
     int interval;
-    int manual_calibration_performed;
+    bool manual_calibration_performed;
     float temp_offset_x;
     float temp_offset_y;
 };
 
 // define filename to store config file
 const String global_config_filename = "/config.json";
-
+using sensor_entry_callback = std::function<void(const String& type, const JsonVariant& value)>;
 extern global_config global_config_data;
-bool littlefs_read_config();
+
+bool littlefs_read_config(const sensor_entry_callback& switcher = [](const String& type, const JsonVariant& value) {});
 void littlefs_write_config();

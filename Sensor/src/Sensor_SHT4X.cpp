@@ -3,16 +3,14 @@
 #include <Adafruit_SHT4x.h>
 #include <Wire.h>
 
-Sensor_SHT4X::Sensor_SHT4X(int i2c_sda_pin, int i2c_scl_pin, sht4x_precision_t precision) :
+Sensor_SHT4X::Sensor_SHT4X(int i2c_sda_pin, int i2c_scl_pin, sht4x_precision_t precision, SENSOR_LOCATION location) :
 	i2c_sda_pin{ i2c_sda_pin }, i2c_scl_pin{ i2c_scl_pin }, sht4{}, precision{precision},
-    last_measured_rh_value{-1.0f}, last_measured_temp{-273.15f}, 
-    new_measurement_available{false}, found{false}
-{
-}
+    last_measured_rh_value{0.0f}, last_measured_temp{0.0f}, 
+    new_measurement_available{false}, found{false}, location{ location }
+{}
 
 Sensor_SHT4X::~Sensor_SHT4X()
-{
-}
+{}
 
 void Sensor_SHT4X::setup()
 {
@@ -85,11 +83,11 @@ void Sensor_SHT4X::update()
 {
     sensors_event_t humidity, temp;
 
-    sht4.getEvent(&humidity, &temp);
-
-    last_measured_rh_value = humidity.relative_humidity;
-    last_measured_temp = temp.temperature;
-    new_measurement_available = true;
+    if (sht4.getEvent(&humidity, &temp)) {
+        last_measured_rh_value = humidity.relative_humidity;
+        last_measured_temp = temp.temperature;
+        new_measurement_available = true;
+    }
 }
 
 bool Sensor_SHT4X::has_new_data()
@@ -126,4 +124,8 @@ const char* const Sensor_SHT4X::get_name() const
 
 bool Sensor_SHT4X::is_present() const {
     return found;
+}
+
+SENSOR_LOCATION Sensor_SHT4X::get_location() const {
+    return location;
 }
