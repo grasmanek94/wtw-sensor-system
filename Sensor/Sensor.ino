@@ -19,7 +19,7 @@
 #include <Vector.h>
 
 #include <Wire.h>
-#define SENSOR_VERSION "1.6"
+#define SENSOR_VERSION "2.0"
 
 char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");

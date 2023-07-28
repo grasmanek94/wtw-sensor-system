@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <Arduino.h>
 
+#pragma pack(push, 1)
 struct measurement_entry {
     uint32_t relative_time;
     uint16_t co2_ppm: 11; // 11 bits 0..2047
@@ -26,6 +27,10 @@ struct measurement_entry {
     void set_temp(float temp);
     float get_temp() const;
 };
+#pragma pack(pop)
+
+const unsigned int measurement_entry_size = sizeof(measurement_entry);
+static_assert(measurement_entry_size == 15);
 
 struct measurement_entry_avg {
     float co2_ppm;
