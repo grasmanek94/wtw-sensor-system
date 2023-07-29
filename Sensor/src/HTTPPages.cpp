@@ -42,7 +42,6 @@ static const char config_html_end[] PROGMEM = R"rawliteral(
 
 static bool check_auth(AsyncWebServerRequest* request) {
     if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
-        //request->send(HTTP_FORBIDDEN, "text/plain");
         return false;
     }
     return true;

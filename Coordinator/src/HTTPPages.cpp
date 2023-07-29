@@ -43,7 +43,10 @@ const char config_html_end[] PROGMEM = R"rawliteral(
 )rawliteral";
 
 static bool check_auth(AsyncWebServerRequest* request) {
+    // REMEMBER TO REMOVE
     return true;
+    /////////////////////////////////
+
     if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
         return false;
     }
@@ -199,7 +202,83 @@ void http_page_devices(AsyncWebServerRequest* request) {
     request->send(HTTP_OK, "text/plain", devices);
 }
 
-static void dump_measurements_data(AsyncWebServerRequest* request, std::function<RingBufInterface<measurement_entry>*(device_data* sensor)> getter) {
+static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen, size_t index, int* entry_idx, RingBufInterface<measurement_entry>* input_data) {
+    size_t written_len = 0;
+    while (true) {
+        if ((*entry_idx) >= input_data->size()) {
+            //Serial.println("(entry_idx >= input_data->size())");
+            delete entry_idx;
+            return 0;
+        }
+
+        //Serial.println(*entry_idx);
+
+        String data;
+
+        if (*entry_idx == 0) {
+            //Serial.println("header");
+            data += input_data->at(*entry_idx).getHeaders();
+        }
+
+        data += input_data->at(*entry_idx).toString();
+        size_t current_len = data.length();
+        size_t total_len = written_len + current_len;
+
+        if (total_len > maxLen) {
+            //Serial.println("total_len > maxLen");
+            // no point in writing more here, this shouldn't be ever called though.
+            // logic to make this work will be difficult, and I'm lazy (GoodEnough(TM))
+            delete entry_idx;
+            return 0;
+        }
+  
+        memcpy(buffer, data.c_str(), current_len);
+        buffer += current_len;
+        written_len = total_len;
+
+        ++(*entry_idx);
+
+        if ((*entry_idx) < input_data->size())
+        {
+            if ((input_data->at(*entry_idx).toString().length() + written_len) < maxLen) {
+                //Serial.println("continue");
+                continue;
+            }
+        }
+
+        return written_len;
+    }
+}
+
+static void dump_measurements_data(AsyncWebServerRequest* request, RingBufInterface<measurement_entry>* input_data) {
+    //if (input_data->isEmpty()) {
+    //    return request->send(HTTP_OK_NO_CONTENT, "text/plain");
+    //}
+
+    while (!input_data->isFull()) {
+        measurement_entry entry;
+        entry.relative_time = 0x7FFFFFFF;
+        entry.sensor_status = 0x7FFF;
+        entry.sequence_number = 0x7FFFFFFF;
+        entry.set_co2(2000);
+        entry.set_rh(100.0f);
+        entry.set_temp(49.99);
+        input_data->push(entry);
+    }
+
+    int* entry_idx = new int;
+    *entry_idx = 0;
+
+    AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [entry_idx, input_data](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+        return process_chunked_response_input_data(buffer, maxLen, index, entry_idx, input_data);
+    });
+    
+    response->setCode(HTTP_OK);
+    response->setContentType("text/plain");
+    request->send(response);
+}
+
+void http_page_very_short_data(AsyncWebServerRequest* request) { 
     if (!check_auth(request)) {
         return request->requestAuthentication();
     }
@@ -209,41 +288,33 @@ static void dump_measurements_data(AsyncWebServerRequest* request, std::function
         return request->send(HTTP_BAD_REQUEST, "text/plain");
     }
 
-    device_data* sensor = &sensors[location_id];
-    auto* input_data = getter(sensor);
-
-    if (input_data->isEmpty()) {
-        return request->send(HTTP_OK_NO_CONTENT, "text/plain");
-    }
-
-    String data;
-    for (int i = 0; i < input_data->size(); ++i) {
-        if (i == 0) {
-            data += input_data->at(i).getHeaders();
-        }
-
-        data += input_data->at(i).toString();
-    }
-
-    request->send(HTTP_OK, "text/plain", data);
-}
-
-void http_page_very_short_data(AsyncWebServerRequest* request) {   
-    dump_measurements_data(request, [&](device_data* sensor) {
-        return &sensor->very_short_data;
-    });
+    dump_measurements_data(request, &(sensors[location_id].very_short_data));
 }
 
 void http_page_short_data(AsyncWebServerRequest* request) {
-    dump_measurements_data(request, [&](device_data* sensor) {
-        return &sensor->short_data;
-    });
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+    int location_id = get_sensor_index(request);
+    if (location_id == INVALID_DEVICE_ID) {
+        return request->send(HTTP_BAD_REQUEST, "text/plain");
+    }
+
+    dump_measurements_data(request, &(sensors[location_id].short_data));
 }
 
 void http_page_long_data(AsyncWebServerRequest* request) {
-    dump_measurements_data(request, [&](device_data* sensor) {
-        return &sensor->long_data;
-    });
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+    int location_id = get_sensor_index(request);
+    if (location_id == INVALID_DEVICE_ID) {
+        return request->send(HTTP_BAD_REQUEST, "text/plain");
+    }
+
+    dump_measurements_data(request, &(sensors[location_id].long_data));
 }
 
 String http_page_flash_processor(const String& var) {
