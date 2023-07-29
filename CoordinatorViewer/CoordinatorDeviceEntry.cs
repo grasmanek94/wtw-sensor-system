@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CoordinatorViewer
+﻿namespace CoordinatorViewer
 {
     internal class CoordinatorDeviceEntry
     {
-        public int device_index { get; set; }
+        public SensorLocation sensor_location_id { get; set; }
         public string device_id { get; set; }
         public VentilationState current_ventilation_state_co2 { get; set; }
         public VentilationState current_ventilation_state_rh { get; set; }
@@ -27,7 +21,7 @@ namespace CoordinatorViewer
 
         public override int GetHashCode()
         {
-            return device_id?.GetHashCode() ?? device_index;
+            return (int)sensor_location_id;
         }
     }
 }

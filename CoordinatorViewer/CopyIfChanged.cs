@@ -5,9 +5,9 @@
         public static bool CopyIfChanged(CoordinatorDeviceEntry dest, CoordinatorDeviceEntry src)
         {
             bool changed = false;
-            if (src.device_index != dest.device_index)
+            if (src.sensor_location_id != dest.sensor_location_id)
             {
-                dest.device_index = src.device_index;
+                dest.sensor_location_id = src.sensor_location_id;
                 changed = true;
             }
             if (src.device_id != dest.device_id)

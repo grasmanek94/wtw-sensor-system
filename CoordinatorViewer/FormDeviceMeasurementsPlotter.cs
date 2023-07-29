@@ -8,14 +8,14 @@ namespace CoordinatorViewer
         {
             private class FormPlotControlUpdater
             {
-                public string device_id;
+                public string sensor_location;
                 public Control control;
                 public PlotContainerSource container;
                 public bool added;
 
-                public FormPlotControlUpdater(string device_id, Control control, PlotContainerSource container)
+                public FormPlotControlUpdater(SensorLocation sensor_location, Control control, PlotContainerSource container)
                 {
-                    this.device_id = device_id;
+                    this.sensor_location = sensor_location.ToString();
                     this.control = control;
                     this.container = container;
                     added = false;
@@ -28,11 +28,11 @@ namespace CoordinatorViewer
                         added = true;
                         RunOn(control, () =>
                         {
-                            container.Add(device_id, view);
+                            container.Add(sensor_location, view);
                         });
                     }
 
-                    var plot = container.Get(device_id);
+                    var plot = container.Get(sensor_location);
                     if (plot?.scatter_plot?.Axes?.XAxis?.Label?.Text != null)
                     {
                         plot.scatter_plot.Axes.XAxis.Label.Text = x_label;
@@ -44,7 +44,7 @@ namespace CoordinatorViewer
                 }
             }
 
-            public string device_id;
+            public string sensor_location;
 
             public BindingList<SensorMeasurement> measurements_vs;
             public BindingList<SensorMeasurement> measurements_s;
@@ -63,12 +63,12 @@ namespace CoordinatorViewer
             private readonly IntegerClass max_relative_time;
             private Func<SensorMeasurement, double> relative_time_getter;
 
-            public FormDeviceMeasurementsPlotter(string device_id,
+            public FormDeviceMeasurementsPlotter(SensorLocation sensor_location,
                 BindingList<SensorMeasurement> vs, BindingList<SensorMeasurement> s, BindingList<SensorMeasurement> l, 
                 Control update_control,
                 PlotContainerSource plot_container_co2_ppm, PlotContainerSource plot_container_temperature, PlotContainerSource plot_container_relative_humidity, PlotContainerSource plot_container_ventilation_state)
             {
-                this.device_id = device_id;
+                this.sensor_location = sensor_location.ToString();
 
                 measurements_vs = vs;
                 measurements_s = s;
@@ -84,10 +84,10 @@ namespace CoordinatorViewer
                 mv_relative_humidity = new MeasurementsView(measurements_vs, measurements_s, measurements_l, relative_time_getter, y => y.rh);
                 mv_ventilation_state = new MeasurementsView(measurements_vs, measurements_s, measurements_l, relative_time_getter, y => ((double)y.state_at_this_time));
 
-                control_update_co2_ppm = new(device_id, update_control, plot_container_co2_ppm);
-                control_update_temperature = new(device_id, update_control, plot_container_temperature);
-                control_update_relative_humidity = new(device_id, update_control, plot_container_relative_humidity);
-                control_update_ventilation_state = new(device_id, update_control, plot_container_ventilation_state);
+                control_update_co2_ppm = new(sensor_location, update_control, plot_container_co2_ppm);
+                control_update_temperature = new(sensor_location, update_control, plot_container_temperature);
+                control_update_relative_humidity = new(sensor_location, update_control, plot_container_relative_humidity);
+                control_update_ventilation_state = new(sensor_location, update_control, plot_container_ventilation_state);
 
                 Refresh();
             }

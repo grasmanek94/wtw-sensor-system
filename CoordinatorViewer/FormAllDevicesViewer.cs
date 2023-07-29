@@ -85,7 +85,7 @@ namespace CoordinatorViewer
                     continue;
                 }
 
-                var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.device_id);
+                var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.sensor_location_id);
                 FormDeviceMeasurementsPlotter measurements = null;
                 if(device_entry_measurements.TryGetValue(entry, out measurements))
                 {
@@ -95,11 +95,11 @@ namespace CoordinatorViewer
                     continue;
                 }
 
-                var measurements_s = await coordinator_data.GetShortMeasurements(entry.device_id);
-                var measurements_l = await coordinator_data.GetLongMeasurements(entry.device_id);
+                var measurements_s = await coordinator_data.GetShortMeasurements(entry.sensor_location_id);
+                var measurements_l = await coordinator_data.GetLongMeasurements(entry.sensor_location_id);
 
                 measurements = new FormDeviceMeasurementsPlotter(
-                    entry.device_id, 
+                    entry.sensor_location_id, 
                     measurements_vs, measurements_s, measurements_l,
                     plots_panel,
                     pc_co2_ppm, pc_temp, pc_rh, pc_vent_state);
