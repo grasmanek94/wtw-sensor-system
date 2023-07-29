@@ -43,10 +43,6 @@ const char config_html_end[] PROGMEM = R"rawliteral(
 )rawliteral";
 
 static bool check_auth(AsyncWebServerRequest* request) {
-    // REMEMBER TO REMOVE
-    return true;
-    /////////////////////////////////
-
     if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
         return false;
     }
@@ -251,20 +247,21 @@ static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen
 }
 
 static void dump_measurements_data(AsyncWebServerRequest* request, RingBufInterface<measurement_entry>* input_data) {
-    //if (input_data->isEmpty()) {
-    //    return request->send(HTTP_OK_NO_CONTENT, "text/plain");
-    //}
-
-    while (!input_data->isFull()) {
-        measurement_entry entry;
-        entry.relative_time = 0x7FFFFFFF;
-        entry.sensor_status = 0x7FFF;
-        entry.sequence_number = 0x7FFFFFFF;
-        entry.set_co2(2000);
-        entry.set_rh(100.0f);
-        entry.set_temp(49.99);
-        input_data->push(entry);
+    if (input_data->isEmpty()) {
+        return request->send(HTTP_OK_NO_CONTENT, "text/plain");
     }
+
+    // Debug purposes
+    //while (!input_data->isFull()) {
+    //    measurement_entry entry;
+    //    entry.relative_time = 0x7FFFFFFF;
+    //    entry.sensor_status = 0x7FFF;
+    //    entry.sequence_number = 0x7FFFFFFF;
+    //    entry.set_co2(2000);
+    //    entry.set_rh(100.0f);
+    //    entry.set_temp(49.99);
+    //    input_data->push(entry);
+    //}
 
     int* entry_idx = new int;
     *entry_idx = 0;
