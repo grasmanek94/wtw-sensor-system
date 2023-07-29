@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using OpenTK.Graphics.ES10;
 using ScottPlot;
 using ScottPlot.Axis;
@@ -23,8 +24,6 @@ namespace CoordinatorViewer
         private readonly PlotContainerSource pc_co2_ppm;
         private readonly PlotContainerSource pc_rh;
         private readonly List<PlotContainerSource> pc_list;
-
-        private readonly IntegerClass max_relative_time;
 
         public FormAllDevicesViewer()
         {
@@ -53,8 +52,6 @@ namespace CoordinatorViewer
                 pc_co2_ppm,
                 pc_rh
             };
-
-            max_relative_time = new();
 
             timer = new();
             timer.Elapsed += Start;
@@ -121,7 +118,36 @@ namespace CoordinatorViewer
             return true;
         }
 
-        private async void DeviceSelectionChanged(object? sender, EventArgs e)
+        private void OpenUrl(string url)
+        {
+            try
+            {
+                Process.Start(url);
+            }
+            catch
+            {
+                // hack because of this: https://github.com/dotnet/corefx/issues/10361
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    url = url.Replace("&", "^&");
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Process.Start("xdg-open", url);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    Process.Start("open", url);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        private void DeviceSelectionChanged(object? sender, EventArgs e)
         {
             if (data_grid.SelectedCells.Count != 1)
             {
@@ -135,6 +161,11 @@ namespace CoordinatorViewer
             string column_name = selected_cell.OwningColumn.Name;
 
             Debug.WriteLine(index + ":" + column_name);
+
+            if(column_name == "device_id" && (ModifierKeys & Keys.Control) == Keys.Control)
+            {
+                OpenUrl("http://" + selected_cell.Value.ToString() + "/");
+            }
         }
 
         private static void RunOn(Control which, Action action)
