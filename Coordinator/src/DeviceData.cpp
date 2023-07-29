@@ -23,7 +23,7 @@ device_data::device_data() :
     _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f }
 {}
 
-void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg) {
+void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg, unsigned long time_span) {
     const size_t size = container->size();
     
     avg.set_co2(0);
@@ -38,6 +38,12 @@ void get_average(RingBufInterface<measurement_entry>* container, measurement_ent
     tmp_avg.relative_humidity = 0.0f;
     tmp_avg.state_at_this_time = 0.0f;
     tmp_avg.temperature_c = 0.0f;
+
+    if (size > 0) {
+        // initial value better be not 0 because then it will always stay at 0
+        avg.sequence_number = container->at(0).sequence_number;
+        avg.relative_time = container->at(0).relative_time;
+    }
 
     for (int i = 0; i < size; ++i) {
         tmp_avg.co2_ppm += (float)container->at(i).get_co2();
@@ -58,10 +64,10 @@ void get_average(RingBufInterface<measurement_entry>* container, measurement_ent
         
         tmp_avg.state_at_this_time += (float)container->at(i).state_at_this_time;
 
-        // oldest time = time of all averages (basically when measurement began)
-        // when using newest times, graph plot lines like to time travel
+        // use min instead of max so that we don't get time traveling plots
+        // when max then possible that short data is overlapping with long data etc
+        avg.sequence_number = max(avg.sequence_number, container->at(i).sequence_number);
         avg.relative_time = min(avg.relative_time, container->at(i).relative_time);
-        avg.sequence_number = min(avg.sequence_number, container->at(i).sequence_number);
     }
 
     avg.state_at_this_time = (requested_ventilation_state)(int)round(tmp_avg.state_at_this_time /= (float)size);
@@ -90,7 +96,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
     if (current_very_short_push_count == SENSOR_VERY_SHORT_MEASUREMENT_COUNT) {
         current_very_short_push_count = 0;
 
-        get_average(&very_short_data, _tmp_avg, average_measurement);
+        get_average(&very_short_data, _tmp_avg, average_measurement, SENSOR_VERY_SHORT_MEASUREMENT_PERIOD);
         short_data.pushOverwrite(average_measurement);
         ++current_short_push_count;
     }
@@ -98,7 +104,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
     if (current_short_push_count == SENSOR_SHORT_MEASUREMENT_COUNT) {
         current_short_push_count = 0;
 
-        get_average(&short_data, _tmp_avg, average_measurement);
+        get_average(&short_data, _tmp_avg, average_measurement, SENSOR_SHORT_MEASUREMENT_PERIOD);
         long_data.pushOverwrite(average_measurement);
     }
 }
