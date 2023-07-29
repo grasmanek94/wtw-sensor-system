@@ -198,38 +198,41 @@ void http_page_devices(AsyncWebServerRequest* request) {
     request->send(HTTP_OK, "text/plain", devices);
 }
 
-static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen, size_t index, int* entry_idx, RingBufInterface<measurement_entry>* input_data) {
+static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen, size_t index, int* entry_idx, RingBufInterface<measurement_entry>* input_data, bool updates_only, unsigned long sequence_number) {
     size_t written_len = 0;
     while (true) {
         if ((*entry_idx) >= input_data->size()) {
-            //Serial.println("(entry_idx >= input_data->size())");
             delete entry_idx;
             return 0;
         }
 
-        //Serial.println(*entry_idx);
-
-        String data;
+        String data("");
 
         if (*entry_idx == 0) {
-            //Serial.println("header");
             data += input_data->at(*entry_idx).getHeaders();
         }
 
-        data += input_data->at(*entry_idx).toString();
         size_t current_len = data.length();
+
+        if (!updates_only || input_data->at(*entry_idx).sequence_number > sequence_number) {
+            data += input_data->at(*entry_idx).toString();
+            current_len = data.length();
+        }
+
         size_t total_len = written_len + current_len;
 
         if (total_len > maxLen) {
-            //Serial.println("total_len > maxLen");
+            Serial.println("total_len > maxLen");
             // no point in writing more here, this shouldn't be ever called though.
             // logic to make this work will be difficult, and I'm lazy (GoodEnough(TM))
             delete entry_idx;
             return 0;
         }
   
-        memcpy(buffer, data.c_str(), current_len);
-        buffer += current_len;
+        if (current_len > 0) {
+            memcpy(buffer, data.c_str(), current_len);
+            buffer += current_len;
+        }
         written_len = total_len;
 
         ++(*entry_idx);
@@ -237,7 +240,6 @@ static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen
         if ((*entry_idx) < input_data->size())
         {
             if ((input_data->at(*entry_idx).toString().length() + written_len) < maxLen) {
-                //Serial.println("continue");
                 continue;
             }
         }
@@ -251,23 +253,20 @@ static void dump_measurements_data(AsyncWebServerRequest* request, RingBufInterf
         return request->send(HTTP_OK_NO_CONTENT, "text/plain");
     }
 
-    // Debug purposes
-    //while (!input_data->isFull()) {
-    //    measurement_entry entry;
-    //    entry.relative_time = 0x7FFFFFFF;
-    //    entry.sensor_status = 0x7FFF;
-    //    entry.sequence_number = 0x7FFFFFFF;
-    //    entry.set_co2(2000);
-    //    entry.set_rh(100.0f);
-    //    entry.set_temp(49.99);
-    //    input_data->push(entry);
-    //}
+    bool updates_only = false;
+    unsigned long sequence_number = 0;
+
+    AsyncWebParameter * param = request->getParam("seqnr");
+    if (param && param->value().length() > 0) {
+        sequence_number = param->value().toInt();
+        updates_only = true;
+    }
 
     int* entry_idx = new int;
     *entry_idx = 0;
 
-    AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [entry_idx, input_data](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-        return process_chunked_response_input_data(buffer, maxLen, index, entry_idx, input_data);
+    AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [entry_idx, input_data, updates_only, sequence_number](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+        return process_chunked_response_input_data(buffer, maxLen, index, entry_idx, input_data, updates_only, sequence_number);
     });
     
     response->setCode(HTTP_OK);
