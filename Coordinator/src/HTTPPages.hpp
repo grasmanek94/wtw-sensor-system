@@ -5,6 +5,8 @@ const int HTTP_OK = 200;
 const int HTTP_OK_NO_CONTENT = 204;
 const int HTTP_BAD_REQUEST = 400;
 const int HTTP_FORBIDDEN = 403;
+const int HTTP_CONFLICT = 409;
+const int HTTP_UNPROCESSABLE_CONTENT = 422;
 const int HTTP_INSUFFICIENT_STORAGE = 507;
 
 void http_page_not_found(AsyncWebServerRequest* request);

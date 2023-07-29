@@ -47,7 +47,7 @@ private:
 
 public:
 
-	Sensor_S8(int hardware_serial_nr = 2, SENSOR_LOCATION location = SENSOR_LOCATION::UNKNOWN);
+	Sensor_S8(int hardware_serial_nr = 2, SENSOR_LOCATION location = (SENSOR_LOCATION)0);
 	virtual ~Sensor_S8();
 
 	virtual void setup() override;

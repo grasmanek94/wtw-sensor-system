@@ -7,9 +7,10 @@
 
 const size_t SENSORS_COUNT = (size_t)SENSOR_LOCATION::NUM_LOCATIONS;
 const size_t SENSOR_EXPECTED_INTERVAL = 15 * 1000; // 15 s
-const size_t SENSOR_VERY_SHORT_MEASUREMENT_PERIOD = 60 * 1000; // 1 min
+const size_t SENSOR_VERY_SHORT_MEASUREMENT_PERIOD = 1 * 60 * 1000; // 1 min
 const size_t SENSOR_SHORT_MEASUREMENT_PERIOD = 15 * 60 * 1000; // 15 min
-const size_t SENSOR_LONG_MEASUREMENT_PERIOD = 24 * 60 * 60 * 1000; // 24 h
+const size_t SENSOR_LONG_MEASUREMENT_PERIOD = 48 * 60 * 60 * 1000; // 24h
+
 const size_t SENSOR_VERY_SHORT_MEASUREMENT_COUNT = SENSOR_VERY_SHORT_MEASUREMENT_PERIOD / SENSOR_EXPECTED_INTERVAL;
 const size_t SENSOR_SHORT_MEASUREMENT_COUNT = SENSOR_SHORT_MEASUREMENT_PERIOD / SENSOR_VERY_SHORT_MEASUREMENT_PERIOD;
 const size_t SENSOR_LONG_MEASUREMENT_COUNT = SENSOR_LONG_MEASUREMENT_PERIOD / SENSOR_SHORT_MEASUREMENT_PERIOD;
@@ -67,10 +68,10 @@ struct device_data {
         return requested_ventilation_state_low;
     }
 
-    void push(int co2_ppm, float rh, float temp_c, int sensor_status, long sequence_number);
+    void push(int co2_ppm, float rh, float temp_c, int sensor_status, unsigned long sequence_number);
 
     bool is_associated() const;
-    void associate(String identifier, SENSOR_LOCATION location = SENSOR_LOCATION::UNKNOWN);
+    void associate(String identifier, SENSOR_LOCATION location = SENSOR_LOCATION::BATHROOM);
 
     bool has_recent_data() const;
 
@@ -82,3 +83,7 @@ struct device_data {
 };
 
 extern device_data sensors[SENSORS_COUNT];
+
+// try to keep this below ~16KiB, shall we?
+const size_t TOTAL_SENSORS_DATA_SIZE = sizeof(sensors);
+const size_t MAX_LOCATIONS_PER_DEVICE = 3;

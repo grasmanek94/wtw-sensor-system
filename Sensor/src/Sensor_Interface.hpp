@@ -21,5 +21,5 @@ public:
 	virtual float get_relative_humidity() { return 0.0f; }
 	virtual int get_co2_ppm() { return 0; }
 	virtual int get_meter_status() { return 0; }
-	virtual SENSOR_LOCATION get_location() const { return SENSOR_LOCATION::UNKNOWN; }
+	virtual SENSOR_LOCATION get_location() const { return (SENSOR_LOCATION)0; }
 };

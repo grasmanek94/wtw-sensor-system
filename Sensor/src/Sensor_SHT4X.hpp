@@ -21,7 +21,7 @@ private:
 	SENSOR_LOCATION location;
 
 public:
-	Sensor_SHT4X(int i2c_sda_pin = 15, int i2c_scl_pin = 4, sht4x_precision_t precision = SHT4X_HIGH_PRECISION, SENSOR_LOCATION location = SENSOR_LOCATION::UNKNOWN);
+	Sensor_SHT4X(int i2c_sda_pin = 15, int i2c_scl_pin = 4, sht4x_precision_t precision = SHT4X_HIGH_PRECISION, SENSOR_LOCATION location = (SENSOR_LOCATION)0);
 	virtual ~Sensor_SHT4X();
 
 	virtual void setup() override;

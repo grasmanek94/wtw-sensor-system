@@ -8,7 +8,7 @@
 extern char* SENSOR_VERSION_STR;
 extern String SENSORS_LIST_STR;
 
-const char flash_html[] PROGMEM = R"rawliteral(
+static const char flash_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
@@ -22,7 +22,7 @@ const char flash_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-const char config_html_start[] PROGMEM = R"rawliteral(
+static const char config_html_start[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
@@ -33,14 +33,14 @@ const char config_html_start[] PROGMEM = R"rawliteral(
     <form action="/config" method="post">
 )rawliteral";
 
-const char config_html_end[] PROGMEM = R"rawliteral(
+static const char config_html_end[] PROGMEM = R"rawliteral(
       <input type="submit" value="Save + Reset ESP32">
     </form>
 </body>
 </html>
 )rawliteral";
 
-bool check_auth(AsyncWebServerRequest* request) {
+static bool check_auth(AsyncWebServerRequest* request) {
     if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
         //request->send(HTTP_FORBIDDEN, "text/plain");
         return false;
@@ -52,7 +52,7 @@ void http_page_not_found(AsyncWebServerRequest* request) {
     request->send(404, "text/plain", "Not found");
 }
 
-String http_page_flash_processor(const String& var) {
+static String http_page_flash_processor(const String& var) {
     if (var == "SENSOR_VERSION") {
         return SENSOR_VERSION_STR;
     }
@@ -108,7 +108,7 @@ void http_api_flash_part(AsyncWebServerRequest* request, String filename, size_t
     }
 }
 
-String html_encode(String data) {
+static String html_encode(String data) {
     const char* p = data.c_str();
     String rv = "";
     while (p && *p) {
@@ -126,12 +126,12 @@ String html_encode(String data) {
     return rv;
 }
 
-String add_form_label(String id, String name, String value) {
+static String add_form_label(String id, String name, String value) {
     return "<label for=\"" + id + "\">" + name + ":</label><br>\n"
         "<input type=\"text\" id=\"" + id + "\" name=\"" + id + "\" value=\"" + html_encode(value) + "\"><br>\n";
 }
 
-String add_form_label_textarea(String id, String name, String value) {
+static String add_form_label_textarea(String id, String name, String value) {
     return "<label for=\"" + id + "\">" + name + ":</label><br>\n"
         "<textarea id=\"" + id + "\" name=\"" + id + "\" cols=\"100\" rows=\"50\">" + html_encode(value) + "</textarea><br>\n";
 }

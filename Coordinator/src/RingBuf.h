@@ -72,10 +72,59 @@ template <> struct Index<false> {
 };
 } // namespace RingBufHelper
 
+template <typename ET>
+class RingBufInterface {
+public:
+    RingBufInterface() {}
+    ~RingBufInterface() {}
+
+    /* Push a data in the buffer and overwrite the older data if any */
+    virtual bool pushOverwrite(const ET inElement) __attribute__((noinline)) = 0;
+    /* Push a data in the buffer and overwrite the older data if any, copy it from
+     * its pointer */
+    virtual bool pushOverwrite(const ET* const inElement) __attribute__((noinline)) = 0;
+    /* Push a data at the end of the buffer */
+    virtual bool push(const ET inElement) __attribute__((noinline)) = 0;
+    /* Push a data at the end of the buffer. Copy it from its pointer */
+    virtual bool push(const ET* const inElement) __attribute__((noinline)) = 0;
+    /* Push a data at the end of the buffer with interrupts disabled */
+    virtual bool lockedPush(const ET inElement) = 0;
+    /* Push a data at the end of the buffer with interrupts disabled. Copy it from
+     * its pointer */
+    virtual bool lockedPush(const ET* const inElement) = 0;
+    /* Push a data in the buffer and overwrite the older data if any with
+     * interrupts disabled */
+    virtual bool lockedPushOverwrite(const ET inElement) = 0;
+    /* Push a data in the buffer and overwrite the older data if any with
+     * interrupts disabled. Copy it from its pointer */
+    virtual bool lockedPushOverwrite(const ET* const inElement) = 0;
+    /* Pop the data at the beginning of the buffer */
+    virtual bool pop(ET& outElement) __attribute__((noinline)) = 0;
+    /* Pop the data at the beginning of the buffer with interrupt disabled */
+    virtual bool lockedPop(ET& outElement) = 0;
+    /* Return true if the buffer is full */
+    virtual bool isFull() const = 0;
+    /* Return true if the buffer is empty */
+    virtual bool isEmpty() const = 0;
+    /* Reset the buffer  to an empty state */
+    virtual void clear() = 0;
+    /* return the size of the buffer */
+    virtual uint32_t size() const = 0;
+    /* return the maximum size of the buffer */
+    virtual uint32_t maxSize() const = 0;
+    /* access the buffer using array syntax, not interrupt safe */
+    virtual ET& operator[](uint32_t inIndex) = 0;
+    virtual ET& at(uint32_t inIndex) = 0;
+
+    virtual bool peek(ET& outElement, const size_t distance = 0)
+        __attribute__((noinline)) = 0;
+    virtual bool lockedPeek(ET& outElement, const size_t distance = 0) = 0;
+};
+
 template <typename ET, size_t S,
           typename IT = typename RingBufHelper::Index<(S > 255)>::Type,
           typename BT = typename RingBufHelper::Index<(S > 255)>::BiggerType>
-class RingBuf {
+class RingBuf : public RingBufInterface<ET> {
   /*
    * check the size is greater than 0, otherwise emit a compile time error
    */
@@ -130,11 +179,12 @@ public:
   /* Reset the buffer  to an empty state */
   void clear() { mSize = 0; }
   /* return the size of the buffer */
-  IT size() const { return mSize; }
+  uint32_t size() const { return mSize; }
   /* return the maximum size of the buffer */
-  IT maxSize() const { return S; }
+  uint32_t maxSize() const { return S; }
   /* access the buffer using array syntax, not interrupt safe */
-  ET &operator[](IT inIndex);
+  ET& operator[](uint32_t inIndex);
+  ET& at(uint32_t inIndex);
 
   bool peek(ET &outElement, const size_t distance = 0)
       __attribute__((noinline));
@@ -200,32 +250,6 @@ bool RingBuf<ET, S, IT, BT>::pushOverwrite(const ET *const inElement) {
     return true;
   }
 }
-
-/*template <typename ET, size_t S, typename IT, typename BT>
-bool RingBuf<ET, S, IT, BT>::pushOverwrite(const ET& inElement) {
-    mBuffer[writeIndex()] = inElement;
-    if (isFull()) {
-        incReadIndex();
-        return false;
-    }
-    else {
-        mSize++;
-        return true;
-    }
-}
-
-template <typename ET, size_t S, typename IT, typename BT>
-bool RingBuf<ET, S, IT, BT>::pushOverwrite(ET&& inElement) {
-    mBuffer[writeIndex()] = std::move(inElement);
-    if (isFull()) {
-        incReadIndex();
-        return false;
-    }
-    else {
-        mSize++;
-        return true;
-    }
-}*/
 
 template <typename ET, size_t S, typename IT, typename BT>
 bool RingBuf<ET, S, IT, BT>::lockedPush(const ET inElement) {
@@ -300,13 +324,18 @@ bool RingBuf<ET, S, IT, BT>::lockedPeek(ET &outElement, const size_t distance) {
 }
 
 template <typename ET, size_t S, typename IT, typename BT>
-ET &RingBuf<ET, S, IT, BT>::operator[](IT inIndex) {
-  if (inIndex >= mSize)
-    return mBuffer[0];
-  BT index = (BT)mReadIndex + (BT)inIndex;
-  if (index >= (BT)S)
-    index -= (BT)S;
-  return mBuffer[(IT)index];
+ET& RingBuf<ET, S, IT, BT>::at(uint32_t inIndex) {
+    if (inIndex >= mSize)
+        return mBuffer[0];
+    BT index = (BT)mReadIndex + (BT)inIndex;
+    if (index >= (BT)S)
+        index -= (BT)S;
+    return mBuffer[(IT)index];
+}
+
+template <typename ET, size_t S, typename IT, typename BT>
+ET& RingBuf<ET, S, IT, BT>::operator[](uint32_t inIndex) {
+    return at(inIndex);
 }
 
 #endif /* __RINGBUF_H__ */

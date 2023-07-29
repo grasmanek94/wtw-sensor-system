@@ -3,7 +3,6 @@
 #include <cstdint>
 
 enum class SENSOR_LOCATION : uint8_t {
-	UNKNOWN,
 	LIVING_ROOM,
 	BATHROOM,
 	BEDROOM_FRONT,

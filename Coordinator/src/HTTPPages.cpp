@@ -6,254 +6,11 @@
 #include <ESPAsyncWebSrv.h>
 #include <Update.h>
 
-const int INVALID_DEVICE_ID = -1;
+#include <functional>
 
-int get_device_index(String identifier) {
-    for (int i = SENSORS_COUNT; i >= 0; --i) {
-        if (sensors[i].id == identifier) {
-            return i;
-        }
-    }
-    return INVALID_DEVICE_ID;
-}
+static const int INVALID_DEVICE_ID = -1;
 
-int get_device_index(AsyncWebServerRequest* request) {
-    int device_index = INVALID_DEVICE_ID;
-    bool success = false;
-
-    AsyncWebParameter* param = request->getParam("id");
-    if (param) {
-        device_index = get_device_index(param->value());
-        if (device_index >= 0 && device_index < SENSORS_COUNT) {
-            return device_index;
-        }
-    }
-
-    if (!success) {
-        param = request->getParam("index");
-        if (param) {
-            device_index = param->value().toInt();
-            if (device_index >= 0 && device_index < SENSORS_COUNT) {
-                return device_index;
-            }
-        }
-    }
-
-    return INVALID_DEVICE_ID;
-}
-
-bool check_auth(AsyncWebServerRequest* request) {
-    return true;
-    if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
-        return false;
-    }
-    return true;
-}
-
-void http_page_not_found(AsyncWebServerRequest* request) {
-    request->send(404, "text/plain", "Not found");
-}
-
-void http_api_update(AsyncWebServerRequest* request) {
-    if (!check_auth(request)) {
-        return;
-    }
-
-    int device_index = INVALID_DEVICE_ID;
-
-    AsyncWebParameter* param = request->getParam("deviceId");
-    if (!param) {
-        request->send(HTTP_BAD_REQUEST, "text/plain");
-        return;
-    }
-
-    String device_id = param->value();
-    int free_id = INVALID_DEVICE_ID;
-
-    for (int i = SENSORS_COUNT; i >= 0; --i) {
-        if (!sensors[i].is_associated()) {
-            free_id = i;
-        }
-        else if (sensors[i].id == device_id) {
-            device_index = i;
-            break;
-        }
-    }
-
-    // device not found, check if we can add it, if yes do so
-    if ((device_index == INVALID_DEVICE_ID) && (free_id != INVALID_DEVICE_ID)) {
-        device_index = free_id;
-        sensors[device_index].associate(device_id);
-    }
-
-    if (device_index == INVALID_DEVICE_ID) {
-        request->send(HTTP_INSUFFICIENT_STORAGE, "text/plain");
-        return;
-    }
-
-    long sequence_number = 0;
-
-    param = request->getParam("seqnr");
-    if (param) {
-        sequence_number = param->value().toInt();
-    }
-
-    int params = request->params();
-    for (int i = 0; i < params; i++) {
-        AsyncWebParameter* p = request->getParam(i);
-        if (p->isFile()) { //p->isPost() is also true
-            Serial.printf("FILE[%s]: %s, size: %u\n", p->name().c_str(), p->value().c_str(), p->size());
-        }
-        else if (p->isPost()) {
-            Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
-        }
-        else {
-            Serial.printf("GET[%s]: %s\n", p->name().c_str(), p->value().c_str());
-        }
-    }
-
-    param = request->getParam("loc");
-    float rh = 0.0f;
-    float temp = 0.0f;
-    int co2_ppm = 0;
-    int sensor_status = 0;
-
-    param = request->getParam("rh");
-    if (param) {
-        rh = param->value().toFloat();
-    }
-
-    param = request->getParam("temp");
-    if (param) {
-        temp = param->value().toFloat();
-    }
-
-    param = request->getParam("co2");
-    if (param) {
-        co2_ppm = param->value().toInt();
-    }
-
-    param = request->getParam("status");
-    if (param) {
-        sensor_status = param->value().toInt();
-    }
-
-
-    sensors[device_index].push(co2_ppm, rh, temp, sensor_status, sequence_number);
-
-    request->send(HTTP_OK, "text/plain");
-}
-
-void http_page_devices(AsyncWebServerRequest* request) {
-    if (!check_auth(request)) {
-        return request->requestAuthentication();
-    }
-
-    String devices = sensors[0].getHeaders();
-
-    int device_index = get_device_index(request);
-    if (device_index != INVALID_DEVICE_ID) {
-        devices += sensors[device_index].toString(device_index);
-        return request->send(HTTP_OK, "text/plain", devices);
-    }
-   
-    for (int i = 0; i < SENSORS_COUNT; ++i) {
-        auto& sensor = sensors[i];
-        devices += sensors[i].toString(i);
-    }
-
-    request->send(HTTP_OK, "text/plain", devices);
-}
-
-void http_page_very_short_data(AsyncWebServerRequest* request) {   
-    if (!check_auth(request)) {
-        return request->requestAuthentication();
-    }
-
-    int device_index = get_device_index(request);
-    if (device_index == INVALID_DEVICE_ID) {
-        return request->send(HTTP_BAD_REQUEST, "text/plain");
-    }
-
-    device_data& sensor = sensors[device_index];
-    auto& input_data = sensor.very_short_data;
-
-    if (input_data.isEmpty()) {
-        return request->send(HTTP_OK_NO_CONTENT, "text/plain");
-    }
-
-    String data;
-    for (int i = 0; i < input_data.size(); ++i) {
-        if (i == 0) {
-            data += input_data[i].getHeaders();
-        }
-
-        data += input_data[i].toString();
-    }
-    
-    request->send(HTTP_OK, "text/plain", data);
-}
-
-void http_page_short_data(AsyncWebServerRequest* request) {
-    if (!check_auth(request)) {
-        return request->requestAuthentication();
-    }
-
-    int device_index = get_device_index(request);
-    if (device_index == INVALID_DEVICE_ID) {
-        return request->send(HTTP_BAD_REQUEST, "text/plain");
-    }
-
-    device_data* sensor = &sensors[device_index];
-    auto input_data = sensor->short_data;
-
-    if (input_data.isEmpty()) {
-        return request->send(HTTP_OK_NO_CONTENT, "text/plain");
-    }
-
-    String data;
-    for (int i = 0; i < input_data.size(); ++i) {
-        if (i == 0) {
-            data += input_data[i].getHeaders();
-        }
-
-        data += input_data[i].toString();
-    }
-
-    request->send(HTTP_OK, "text/plain", data);
-
-}
-
-void http_page_long_data(AsyncWebServerRequest* request) {
-    if (!check_auth(request)) {
-        return request->requestAuthentication();;
-    }
-
-    int device_index = get_device_index(request);
-    if (device_index == INVALID_DEVICE_ID) {
-        return request->send(HTTP_BAD_REQUEST, "text/plain");
-    }
-
-    device_data* sensor = &sensors[device_index];
-    auto input_data = sensor->long_data;
-
-    if (input_data.isEmpty()) {
-        return request->send(HTTP_OK_NO_CONTENT, "text/plain");
-    }
-
-    String data;
-    for (int i = 0; i < input_data.size(); ++i) {
-        if (i == 0) {
-            data += input_data[i].getHeaders();
-        }
-
-        data += input_data[i].toString();
-    }
-
-    request->send(HTTP_OK, "text/plain", data);
-}
-
-const char flash_html[] PROGMEM = R"rawliteral(
+static const char flash_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
@@ -265,6 +22,229 @@ const char flash_html[] PROGMEM = R"rawliteral(
 </body>
 </html>
 )rawliteral";
+
+
+static const char config_html_start[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+</head>
+<body>
+    <form action="/config" method="post">
+)rawliteral";
+
+const char config_html_end[] PROGMEM = R"rawliteral(
+      <input type="submit" value="Save + Reset ESP32">
+    </form>
+</body>
+</html>
+)rawliteral";
+
+static bool check_auth(AsyncWebServerRequest* request) {
+    return true;
+    if (!request->authenticate(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str())) {
+        return false;
+    }
+    return true;
+}
+
+void http_page_not_found(AsyncWebServerRequest* request) {
+    request->send(404, "text/plain", "Not found");
+}
+
+static bool process_location_request_data(AsyncWebServerRequest* request, String device_id, unsigned long sequence_number, String location) {
+    int location_id = location.toInt();
+    float rh = 0.0f;
+    float temp = 0.0f;
+    int co2_ppm = 0;
+    int sensor_status = 0;
+
+    if (!sensors[location_id].is_associated()) {
+        sensors[location_id].associate(device_id, (SENSOR_LOCATION)location_id);
+    }
+
+    AsyncWebParameter* awp_rh = request->getParam("rh[" + location + "]");
+    AsyncWebParameter* awp_temp = request->getParam("temp[" + location + "]");
+    AsyncWebParameter* awp_co2 = request->getParam("co2[" + location + "]");
+    AsyncWebParameter* awp_status = request->getParam("status[" + location + "]");
+
+    if (awp_rh) {
+        rh = awp_rh->value().toFloat();
+    }
+
+    if (awp_temp) {
+        temp = awp_temp->value().toFloat();
+    }
+
+    if (awp_co2) {
+        co2_ppm = awp_co2->value().toInt();
+    }
+
+    if (awp_status) {
+        sensor_status = awp_status->value().toInt();
+    }
+
+    sensors[location_id].push(co2_ppm, rh, temp, sensor_status, sequence_number);
+
+    return true;
+}
+
+void http_api_update(AsyncWebServerRequest* request) {
+    if (!check_auth(request)) {
+        return;
+    }
+
+    AsyncWebParameter* param = request->getParam("deviceId");
+    if (!param || param->value().length() < 1) {
+        request->send(HTTP_BAD_REQUEST, "text/plain", "Missing 'deviceId'");
+        return;
+    }
+
+    String device_id = param->value();
+
+    param = request->getParam("seqnr");
+    if (!param || param->value().length() < 1) {
+        request->send(HTTP_BAD_REQUEST, "text/plain", "Missing 'seqnr'");
+        return;
+    }
+
+    unsigned long sequence_number = param->value().toInt();
+
+    int counter = 0;
+    int params = request->params();
+    for (int i = 0; i < params; i++) {
+        AsyncWebParameter* p = request->getParam(i);
+        if (p->name() == "loc") {
+            if (++counter == MAX_LOCATIONS_PER_DEVICE) {
+                request->send(HTTP_UNPROCESSABLE_CONTENT, "text/plain", "Maximum locations per report exceeded");
+                return;
+            }
+
+            int location_id = p->value().toInt();
+
+            if (location_id < 0 || location_id >= SENSORS_COUNT) {
+                request->send(HTTP_UNPROCESSABLE_CONTENT, "text/plain", "Unknown location id: " + p->value());
+                return;
+            }
+
+            if (sensors[location_id].is_associated() && sensors[location_id].id != device_id) {
+                request->send(HTTP_UNPROCESSABLE_CONTENT, "text/plain", "Another sensor has already associated with location " + p->value());
+                return;
+            }
+
+            if (!request->getParam("rh[" + p->value() + "]") &&
+                !request->getParam("temp[" + p->value() + "]") &&
+                !request->getParam("co2[" + p->value() + "]") &&
+                !request->getParam("status[" + p->value() + "]")) {
+                request->send(HTTP_BAD_REQUEST, "text/plain", "Location contains no parameters at all: rh[" + p->value() + "], temp[" + p->value() + "], co2[" + p->value() + "], status[" + p->value() + "]");
+                return;
+            }
+        }
+    }
+
+    for (int i = 0; i < params; i++) {
+        AsyncWebParameter* p = request->getParam(i);
+        if (p->name() == "loc") {
+            process_location_request_data(request, device_id, sequence_number, p->value());
+        }
+    }
+
+    request->send(HTTP_OK, "text/plain");
+}
+
+static int get_sensor_index(AsyncWebServerRequest* request) {
+    AsyncWebParameter* param = request->getParam("loc");
+    if (param && param->value().length() > 0) {
+        int location_id = param->value().toInt();
+        if (location_id < 0 || location_id >= SENSORS_COUNT) {
+            return INVALID_DEVICE_ID;
+        }
+
+        return location_id;
+    }
+
+    param = request->getParam("index");
+    if (param && param->value().length() > 0) {
+        int location_id = param->value().toInt();
+        if (location_id < 0 || location_id >= SENSORS_COUNT) {
+            return INVALID_DEVICE_ID;
+        }
+
+        return location_id;
+    }
+
+    return INVALID_DEVICE_ID;
+}
+
+void http_page_devices(AsyncWebServerRequest* request) {
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+    String devices = sensors[0].getHeaders();
+
+    int location_id = get_sensor_index(request);
+    if (location_id != INVALID_DEVICE_ID) {
+        devices += sensors[location_id].toString(location_id);
+        return request->send(HTTP_OK, "text/plain", devices);
+    }
+   
+    for (int i = 0; i < SENSORS_COUNT; ++i) {
+        auto& sensor = sensors[i];
+        devices += sensors[i].toString(i);
+    }
+
+    request->send(HTTP_OK, "text/plain", devices);
+}
+
+static void dump_measurements_data(AsyncWebServerRequest* request, std::function<RingBufInterface<measurement_entry>*(device_data* sensor)> getter) {
+    if (!check_auth(request)) {
+        return request->requestAuthentication();
+    }
+
+    int location_id = get_sensor_index(request);
+    if (location_id == INVALID_DEVICE_ID) {
+        return request->send(HTTP_BAD_REQUEST, "text/plain");
+    }
+
+    device_data* sensor = &sensors[location_id];
+    auto* input_data = getter(sensor);
+
+    if (input_data->isEmpty()) {
+        return request->send(HTTP_OK_NO_CONTENT, "text/plain");
+    }
+
+    String data;
+    for (int i = 0; i < input_data->size(); ++i) {
+        if (i == 0) {
+            data += input_data->at(i).getHeaders();
+        }
+
+        data += input_data->at(i).toString();
+    }
+
+    request->send(HTTP_OK, "text/plain", data);
+}
+
+void http_page_very_short_data(AsyncWebServerRequest* request) {   
+    dump_measurements_data(request, [&](device_data* sensor) {
+        return &sensor->very_short_data;
+    });
+}
+
+void http_page_short_data(AsyncWebServerRequest* request) {
+    dump_measurements_data(request, [&](device_data* sensor) {
+        return &sensor->short_data;
+    });
+}
+
+void http_page_long_data(AsyncWebServerRequest* request) {
+    dump_measurements_data(request, [&](device_data* sensor) {
+        return &sensor->long_data;
+    });
+}
 
 String http_page_flash_processor(const String& var) {
     return String();
@@ -316,26 +296,7 @@ void http_api_flash_part(AsyncWebServerRequest* request, String filename, size_t
     }
 }
 
-
-const char config_html_start[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML>
-<html lang="en">
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta charset="UTF-8">
-</head>
-<body>
-    <form action="/config" method="post">
-)rawliteral";
-
-const char config_html_end[] PROGMEM = R"rawliteral(
-      <input type="submit" value="Save + Reset ESP32">
-    </form>
-</body>
-</html>
-)rawliteral";
-
-String html_encode(String data) {
+static String html_encode(String data) {
     const char* p = data.c_str();
     String rv = "";
     while (p && *p) {
@@ -353,7 +314,7 @@ String html_encode(String data) {
     return rv;
 }
 
-String add_form_label(String id, String name, String value) {
+static String add_form_label(String id, String name, String value) {
     return "<label for=\"" + id + "\">" + name + ":</label><br>\n"
         "<input type=\"text\" id=\"" + id + "\" name=\"" + id + "\" value=\"" + html_encode(value) + "\"><br>\n";
 }

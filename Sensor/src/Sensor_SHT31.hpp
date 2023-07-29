@@ -21,7 +21,7 @@ private:
 	SENSOR_LOCATION location;
 
 public:
-	Sensor_SHT31(int i2c_sda_pin = 23, int i2c_scl_pin = 22, SENSOR_LOCATION location = SENSOR_LOCATION::UNKNOWN);
+	Sensor_SHT31(int i2c_sda_pin = 23, int i2c_scl_pin = 22, SENSOR_LOCATION location = (SENSOR_LOCATION)0);
 	virtual ~Sensor_SHT31();
 
 	virtual void setup() override;

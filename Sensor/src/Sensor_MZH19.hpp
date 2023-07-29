@@ -24,7 +24,7 @@ private:
 	const unsigned long meassurement_elapsed_millis = 4000;
 
 public:
-	Sensor_MHZ19(bool auto_calibration = false, int hardware_serial_nr = 2, SENSOR_LOCATION location = SENSOR_LOCATION::UNKNOWN);
+	Sensor_MHZ19(bool auto_calibration = false, int hardware_serial_nr = 2, SENSOR_LOCATION location = (SENSOR_LOCATION)0);
 	virtual ~Sensor_MHZ19();
 
 	virtual void setup() override;

@@ -23,9 +23,8 @@ device_data::device_data() :
     _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f }
 {}
 
-template<typename T>
-void get_average(T& container, measurement_entry_avg& tmp_avg, measurement_entry& avg) {
-    const size_t size = container.size();
+void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg) {
+    const size_t size = container->size();
     
     avg.set_co2(0);
     avg.set_rh(0.0f);
@@ -41,14 +40,14 @@ void get_average(T& container, measurement_entry_avg& tmp_avg, measurement_entry
     tmp_avg.temperature_c = 0.0f;
 
     for (int i = 0; i < size; ++i) {
-        tmp_avg.co2_ppm += (float)container[i].get_co2();
-        tmp_avg.relative_humidity += (float)container[i].get_rh();
-        tmp_avg.temperature_c += (float)container[i].get_temp();
+        tmp_avg.co2_ppm += (float)container->at(i).get_co2();
+        tmp_avg.relative_humidity += (float)container->at(i).get_rh();
+        tmp_avg.temperature_c += (float)container->at(i).get_temp();
 
         MeterStatusUnion meter_status;
         MeterStatusUnion meter_status_avg;
 
-        meter_status.combined = container[i].sensor_status;
+        meter_status.combined = container->at(i).sensor_status;
         meter_status_avg.combined = avg.sensor_status;
 
         meter_status_avg.split.meter_status |= meter_status.split.meter_status;
@@ -57,12 +56,12 @@ void get_average(T& container, measurement_entry_avg& tmp_avg, measurement_entry
         
         avg.sensor_status = meter_status_avg.combined;
         
-        tmp_avg.state_at_this_time += (float)container[i].state_at_this_time;
+        tmp_avg.state_at_this_time += (float)container->at(i).state_at_this_time;
 
         // oldest time = time of all averages (basically when measurement began)
         // when using newest times, graph plot lines like to time travel
-        avg.relative_time = min(avg.relative_time, container[i].relative_time);
-        avg.sequence_number = min(avg.sequence_number, container[i].sequence_number);
+        avg.relative_time = min(avg.relative_time, container->at(i).relative_time);
+        avg.sequence_number = min(avg.sequence_number, container->at(i).sequence_number);
     }
 
     avg.state_at_this_time = (requested_ventilation_state)(int)round(tmp_avg.state_at_this_time /= (float)size);
@@ -71,7 +70,7 @@ void get_average(T& container, measurement_entry_avg& tmp_avg, measurement_entry
     avg.set_temp(tmp_avg.temperature_c / (float)size);
 }
 
-void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, long sequence_number) {
+void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, unsigned long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
 
     current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);
@@ -91,7 +90,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, l
     if (current_very_short_push_count == SENSOR_VERY_SHORT_MEASUREMENT_COUNT) {
         current_very_short_push_count = 0;
 
-        get_average(very_short_data, _tmp_avg, average_measurement);
+        get_average(&very_short_data, _tmp_avg, average_measurement);
         short_data.pushOverwrite(average_measurement);
         ++current_short_push_count;
     }
@@ -99,7 +98,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, l
     if (current_short_push_count == SENSOR_SHORT_MEASUREMENT_COUNT) {
         current_short_push_count = 0;
 
-        get_average(short_data, _tmp_avg, average_measurement);
+        get_average(&short_data, _tmp_avg, average_measurement);
         long_data.pushOverwrite(average_measurement);
     }
 }
@@ -152,7 +151,7 @@ String device_data::toString(int index) const {
 
 String device_data::getHeaders() const {
     return
-        String("device_index,\t"
+        String("sensor_location_id,\t"
         "device_id,\t"
         "current_ventilation_state_co2,\t"
         "current_ventilation_state_rh,\t"
