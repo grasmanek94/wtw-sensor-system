@@ -205,10 +205,10 @@ void perform_http_request(const char* request) {
     http.end();
 }
 
-bool fill_location_data(int location_index, int data_index, char* buffer, size_t buffer_size) {
+bool fill_location_data(int location_index, char* buffer, size_t buffer_size) {
     bool send = false;
 
-    snprintf(buffer, buffer_size, "%s&loc=%d", buffer, data_index, (int)sensors.front()->get_location());
+    snprintf(buffer, buffer_size, "%s&loc=%d", buffer, location_index, (int)sensors.front()->get_location());
 
     float result_temp = measurements[location_index].temp_present ?
         global_config_data.temp_offset_x * measurements[location_index].last_measured_temp + global_config_data.temp_offset_y :
@@ -223,22 +223,22 @@ bool fill_location_data(int location_index, int data_index, char* buffer, size_t
             if (sensor->get_location() == (SENSOR_LOCATION)location_index) {
                 if (sensor->has_co2_ppm()) {
                     send = true;
-                    snprintf(buffer, buffer_size, "%s&co2[%d]=%d", buffer, data_index, measurements[location_index].last_measured_co2_ppm);
+                    snprintf(buffer, buffer_size, "%s&co2[%d]=%d", buffer, location_index, measurements[location_index].last_measured_co2_ppm);
                 }
 
                 if (sensor->has_temperature()) {
                     send = true;
-                    snprintf(buffer, buffer_size, "%s&temp[%d]=%.1f", buffer, data_index, result_temp);
+                    snprintf(buffer, buffer_size, "%s&temp[%d]=%.1f", buffer, location_index, result_temp);
                 }
 
                 if (sensor->has_relative_humidity()) {
                     send = true;
-                    snprintf(buffer, buffer_size, "%s&rh[%d]=%.1f", buffer, data_index, result_rh);
+                    snprintf(buffer, buffer_size, "%s&rh[%d]=%.1f", buffer, location_index, result_rh);
                 }
 
                 if (sensor->has_meter_status()) {
                     send = true;
-                    snprintf(buffer, buffer_size, "%s&status[%d]=%d", buffer, data_index, measurements[location_index].meter_status);
+                    snprintf(buffer, buffer_size, "%s&status[%d]=%d", buffer, location_index, measurements[location_index].meter_status);
                 }
             }
         }
@@ -267,12 +267,10 @@ void send_measurements() {
             continue;
         }
 
-        if (fill_location_data(i, data_index, data_measurements_string, sizeof(data_measurements_string))) {
+        if (fill_location_data(i, data_measurements_string, sizeof(data_measurements_string))) {
             send = true;
             measurements[i].present = false;
         }
-
-        ++data_index;
     }
     
     Serial.println(data_measurements_string);
