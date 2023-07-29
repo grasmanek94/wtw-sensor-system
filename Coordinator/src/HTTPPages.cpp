@@ -53,7 +53,7 @@ void http_page_not_found(AsyncWebServerRequest* request) {
     request->send(404, "text/plain", "Not found");
 }
 
-static bool process_location_request_data(AsyncWebServerRequest* request, String device_id, unsigned long sequence_number, String location) {
+static void process_location_request_data(AsyncWebServerRequest* request, String device_id, unsigned long sequence_number, String location) {
     int location_id = location.toInt();
     float rh = 0.0f;
     float temp = 0.0f;
@@ -86,8 +86,6 @@ static bool process_location_request_data(AsyncWebServerRequest* request, String
     }
 
     sensors[location_id].push(co2_ppm, rh, temp, sensor_status, sequence_number);
-
-    return true;
 }
 
 void http_api_update(AsyncWebServerRequest* request) {
@@ -199,11 +197,15 @@ void http_page_devices(AsyncWebServerRequest* request) {
 }
 
 static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen, size_t index, int* entry_idx, RingBufInterface<measurement_entry>* input_data, bool updates_only, unsigned long sequence_number) {
+    if (entry_idx == nullptr) {
+        return 0;
+    }
+
     size_t written_len = 0;
     while (true) {
         if ((*entry_idx) >= input_data->size()) {
             delete entry_idx;
-            return 0;
+            return written_len;
         }
 
         String data("");
@@ -237,11 +239,14 @@ static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen
 
         ++(*entry_idx);
 
-        if ((*entry_idx) < input_data->size())
-        {
+        if ((*entry_idx) < input_data->size()) {
             if ((input_data->at(*entry_idx).toString().length() + written_len) < maxLen) {
                 continue;
             }
+        }
+
+        if (written_len == 0) {
+            delete entry_idx;
         }
 
         return written_len;
