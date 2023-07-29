@@ -103,6 +103,7 @@
     <ClInclude Include="src\HTTPPages.hpp" />
     <ClInclude Include="src\LittleFS.hpp" />
     <ClInclude Include="src\MeasurementEntry.hpp" />
+    <ClInclude Include="src\MeterStatus.hpp" />
     <ClInclude Include="src\RingBuf.h" />
     <ClInclude Include="src\SensorLocation.hpp" />
     <ClInclude Include="src\VentilationState.hpp" />

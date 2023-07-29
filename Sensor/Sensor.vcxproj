@@ -104,6 +104,7 @@
     <ClInclude Include="src\HTTPPages.hpp" />
     <ClInclude Include="src\HumidityOffset.hpp" />
     <ClInclude Include="src\LittleFS.hpp" />
+    <ClInclude Include="src\MeterStatus.hpp" />
     <ClInclude Include="src\MyWifi.hpp" />
     <ClInclude Include="src\SensorLocation.hpp" />
     <ClInclude Include="src\Sensor_Interface.hpp" />

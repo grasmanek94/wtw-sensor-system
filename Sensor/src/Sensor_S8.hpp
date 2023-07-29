@@ -12,7 +12,7 @@
 
 class Sensor_S8 : public Sensor_Interface {
 public:
-	enum class CALIBRATION_STATUS : uint8_t { // 3 bits
+	enum class CALIBRATION_STATUS : uint8_t { // 3 bits but takes 4 bits
 		UNKNOWN,
 		MANUAL_CALIBRATION_NOT_PERFORMED_YET,
 		OK,		
@@ -20,7 +20,7 @@ public:
 		SENSOR_CALIBRATION_FAILED
 	};
 
-	enum class ABC_STATUS: uint8_t { // 2 bits
+	enum class ABC_STATUS: uint8_t { // 2 bits but takes 4 bits
 		UNKNOWN,
 		OK,
 		FAIL
