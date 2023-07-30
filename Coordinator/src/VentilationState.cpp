@@ -6,8 +6,8 @@
 #include <UrlEncode.h>
 #include <WiFi.h>
 
-requested_ventilation_state old_ventilation_state = requested_ventilation_state_undefined;
-unsigned long next_measurements_send_time = 0;
+static requested_ventilation_state old_ventilation_state = requested_ventilation_state_undefined;
+static unsigned long last_send_time = 0;
 
 requested_ventilation_state get_highest_ventilation_state() {
     requested_ventilation_state state = requested_ventilation_state_low;
@@ -39,7 +39,7 @@ bool send_ventilation_status() {
     String URL = "http://" + global_config_data.destination_address + "/api.html"
         "?username=" + urlEncode(global_config_data.auth_user) +
         "&password=" + urlEncode(global_config_data.auth_password) +
-        "&command=";
+        "&vremotecmd=";
 
     switch (get_highest_ventilation_state()) {
     case requested_ventilation_state_high:
@@ -82,9 +82,10 @@ bool send_ventilation_status() {
 
 void check_measurements() {
     unsigned long now = millis();
+    unsigned long interval = global_config_data.interval * 1000;
 
-    if (now > next_measurements_send_time) {
-        next_measurements_send_time = now + (global_config_data.interval * 1000);
+    if ((now - last_send_time) > interval) {
+        interval = now;
 
         requested_ventilation_state new_state = get_highest_ventilation_state();
         if (old_ventilation_state != new_state) {
