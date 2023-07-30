@@ -196,7 +196,11 @@ void http_page_devices(AsyncWebServerRequest* request) {
     request->send(HTTP_OK, "text/plain", devices);
 }
 
-static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen, size_t index, int* entry_idx, RingBufInterface<measurement_entry>* input_data, bool updates_only, unsigned long sequence_number) {
+static size_t process_chunked_response_input_data(
+    uint8_t* buffer, size_t maxLen, size_t index, 
+    int* entry_idx, RingBufInterface<measurement_entry>* input_data, 
+    bool updates_only_sequence_number, bool updates_only_timestamp, 
+    unsigned long sequence_number, unsigned long timestamp) {
     if (entry_idx == nullptr) {
         return 0;
     }
@@ -216,7 +220,10 @@ static size_t process_chunked_response_input_data(uint8_t* buffer, size_t maxLen
 
         size_t current_len = data.length();
 
-        if (!updates_only || input_data->at(*entry_idx).sequence_number > sequence_number) {
+        if ((!updates_only_sequence_number && !updates_only_timestamp) || 
+            (updates_only_sequence_number && input_data->at(*entry_idx).sequence_number > sequence_number) || 
+            (updates_only_timestamp && input_data->at(*entry_idx).relative_time > timestamp)) {
+
             data += input_data->at(*entry_idx).toString();
             current_len = data.length();
         }
@@ -258,20 +265,29 @@ static void dump_measurements_data(AsyncWebServerRequest* request, RingBufInterf
         return request->send(HTTP_OK_NO_CONTENT, "text/plain");
     }
 
-    bool updates_only = false;
+    bool updates_only_sequence_number = false;
     unsigned long sequence_number = 0;
 
-    AsyncWebParameter * param = request->getParam("seqnr");
+    AsyncWebParameter* param = request->getParam("seqnr");
     if (param && param->value().length() > 0) {
         sequence_number = param->value().toInt();
-        updates_only = true;
+        updates_only_sequence_number = true;
+    }
+
+    bool updates_only_timestamp = false;
+    unsigned long relative_time = 0;
+
+    param = request->getParam("time");
+    if (param && param->value().length() > 0) {
+        relative_time = param->value().toInt();
+        updates_only_timestamp = true;
     }
 
     int* entry_idx = new int;
     *entry_idx = 0;
 
-    AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [entry_idx, input_data, updates_only, sequence_number](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-        return process_chunked_response_input_data(buffer, maxLen, index, entry_idx, input_data, updates_only, sequence_number);
+    AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [entry_idx, input_data, updates_only_sequence_number, sequence_number, updates_only_timestamp, relative_time](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+        return process_chunked_response_input_data(buffer, maxLen, index, entry_idx, input_data, updates_only_sequence_number, updates_only_timestamp, relative_time, sequence_number);
     });
     
     response->setCode(HTTP_OK);

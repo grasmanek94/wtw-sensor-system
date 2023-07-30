@@ -10,15 +10,18 @@ static requested_ventilation_state old_ventilation_state = requested_ventilation
 static unsigned long last_send_time = 0;
 
 requested_ventilation_state get_highest_ventilation_state() {
+    // keep in mind that this data may be changed by another thread..
+    // but consindering it's just a few bools/ints and the sensors array doesn't 
+    // get modified with new entries there should be no real race condition 
+    // (I mean, there WILL be a race condition but the negative impact is 'almost' zero)
+    // best case a too high ventilation state will be selected
+    // worst case medium ventilation state by error..
     requested_ventilation_state state = requested_ventilation_state_low;
     bool has_any_associated_devices = false;
     for (const auto& sensor : sensors) {
         if (sensor.is_associated()) {
             has_any_associated_devices = true;
-            requested_ventilation_state dev_state = sensor.get_highest_ventilation_state();
-            if (dev_state > state) {
-                state = dev_state;
-            }
+            state = max(sensor.get_highest_ventilation_state(), state);
         }
     }
 
@@ -52,6 +55,11 @@ bool send_ventilation_status() {
 
     case requested_ventilation_state_low:
         URL += "low";
+        break;
+
+    default:
+        // !! safety !! - Occupants present = medium is required. Low is "no occupants".
+        URL += "medium";
         break;
     }
 

@@ -51,7 +51,7 @@ namespace CoordinatorViewer
             public BindingList<SensorMeasurement> measurements_s;
             public BindingList<SensorMeasurement> measurements_l;
 
-            public int? measurements_l_seqnr;
+            public int? measurements_l_teltime;
 
             public MeasurementsView mv_co2_ppm;
             public MeasurementsView mv_temperature;
@@ -76,7 +76,7 @@ namespace CoordinatorViewer
                 measurements_s = new ();
                 measurements_l = new ();
 
-                measurements_l_seqnr = null;
+                measurements_l_teltime = null;
 
                 max_relative_time = new();
                 relative_time_getter = new(x => (x.relative_time - max_relative_time.Value) / 60.0);
@@ -109,23 +109,23 @@ namespace CoordinatorViewer
             }
 
             // keep appending data with this
-            private bool Update(BindingList<SensorMeasurement> new_measurements, BindingList<SensorMeasurement> current_measurements, ref int? max_seqnr, bool clr = false)
+            private bool Update(BindingList<SensorMeasurement> new_measurements, BindingList<SensorMeasurement> current_measurements, ref int? max_reltime, bool clr = false)
             {
                 bool added_values = false;
-                int new_max_seqnr = max_seqnr.HasValue ? max_seqnr.Value : 0;
+                int new_max_reltime = max_reltime.HasValue ? max_reltime.Value : 0;
 
                 if(clr)
                 {
-                    new_max_seqnr = 0;
+                    new_max_reltime = 0;
                     current_measurements.Clear();
                 }
 
                 foreach(SensorMeasurement measurement in new_measurements)
                 {
-                    new_max_seqnr = Math.Max(new_max_seqnr, measurement.sequence_number);
-                    if (max_seqnr.HasValue)
+                    new_max_reltime = Math.Max(new_max_reltime, measurement.relative_time);
+                    if (max_reltime.HasValue)
                     {
-                        if(max_seqnr.Value < measurement.sequence_number)
+                        if(max_reltime.Value < measurement.relative_time)
                         {
                             max_relative_time.max(measurement.relative_time);
                             current_measurements.Add(measurement);
@@ -139,7 +139,7 @@ namespace CoordinatorViewer
                         added_values = true;
                     }
                 }
-                max_seqnr = new_max_seqnr;
+                max_reltime = new_max_reltime;
                 return added_values;
             }
 
@@ -147,7 +147,7 @@ namespace CoordinatorViewer
             {
                 bool vs = Update(new_measurements_vs, measurements_vs);
                 bool s = Update(new_measurements_s, measurements_s);
-                bool l = Update(new_measurements_l, measurements_l, ref measurements_l_seqnr);
+                bool l = Update(new_measurements_l, measurements_l, ref measurements_l_teltime);
 
                 if (vs || s || l)
                 {

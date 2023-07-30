@@ -86,7 +86,7 @@ namespace CoordinatorViewer
 
                 var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.sensor_location_id);
                 var measurements_s = await coordinator_data.GetShortMeasurements(entry.sensor_location_id);
-                var measurements_l = await coordinator_data.GetLongMeasurements(entry.sensor_location_id, measurements.measurements_l_seqnr);
+                var measurements_l = await coordinator_data.GetLongMeasurements(entry.sensor_location_id, measurements.measurements_l_teltime);
 
                 measurements.Update(measurements_vs, measurements_s, measurements_l);
             }

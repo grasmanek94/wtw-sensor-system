@@ -68,30 +68,30 @@ namespace CoordinatorViewer
             return await GetData<SensorMeasurement>(response);
         }
 
-        public Task<HttpResponseMessage> GetMeasurements(string timespan, SensorLocation index, int? from_sequence_number = null)
+        public Task<HttpResponseMessage> GetMeasurements(string timespan, SensorLocation index, int? from_rel_time = null)
         {
             string target = "/get/" + timespan + "/?loc=" + ((int)index).ToString();
-            if(from_sequence_number.HasValue)
+            if(from_rel_time.HasValue)
             {
-                target += "&seqnr=" + from_sequence_number.Value.ToString();
+                target += "&time=" + from_rel_time.Value.ToString();
             }
 
             return http_client.GetAsync(new Uri(base_address, target));
         }
 
-        public async Task<BindingList<SensorMeasurement>> GetVeryShortMeasurements(SensorLocation index, int? from_sequence_number = null)
+        public async Task<BindingList<SensorMeasurement>> GetVeryShortMeasurements(SensorLocation index, int? from_rel_time = null)
         {
-            return await GetMeasurements(GetMeasurements("very_short", index, from_sequence_number));
+            return await GetMeasurements(GetMeasurements("very_short", index, from_rel_time));
         }
 
-        public async Task<BindingList<SensorMeasurement>> GetShortMeasurements(SensorLocation index, int? from_sequence_number = null)
+        public async Task<BindingList<SensorMeasurement>> GetShortMeasurements(SensorLocation index, int? from_rel_time = null)
         {
-            return await GetMeasurements(GetMeasurements("short", index, from_sequence_number));
+            return await GetMeasurements(GetMeasurements("short", index, from_rel_time));
         }
 
-        public async Task<BindingList<SensorMeasurement>> GetLongMeasurements(SensorLocation index, int? from_sequence_number = null)
+        public async Task<BindingList<SensorMeasurement>> GetLongMeasurements(SensorLocation index, int? from_rel_time = null)
         {
-            return await GetMeasurements(GetMeasurements("long", index, from_sequence_number));
+            return await GetMeasurements(GetMeasurements("long", index, from_rel_time));
         }
 
         /*
