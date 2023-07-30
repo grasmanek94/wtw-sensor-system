@@ -3,7 +3,7 @@
     internal class CoordinatorDeviceEntry
     {
         public SensorLocation sensor_location_id { get; set; }
-        public string device_id { get; set; }
+        public string? device_id { get; set; }
         public VentilationState current_ventilation_state_co2 { get; set; }
         public VentilationState current_ventilation_state_rh { get; set; }
         public bool is_associated { get; set; }

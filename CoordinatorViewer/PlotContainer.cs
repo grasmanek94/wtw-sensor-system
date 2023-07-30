@@ -21,7 +21,7 @@ namespace CoordinatorViewer
 
         public ScatterPlot Add(string label)
         {
-            ScatterPlot plot;
+            ScatterPlot? plot;
             if (!plots.TryGetValue(label, out plot))
             {
                 plot = new ScatterPlot(forms_plot, label);
@@ -31,9 +31,9 @@ namespace CoordinatorViewer
             return plot;
         }
 
-        public ScatterPlot Get(string label)
+        public ScatterPlot? Get(string label)
         {
-            ScatterPlot plot;
+            ScatterPlot? plot;
             if (!plots.TryGetValue(label, out plot))
             {
                 return null;

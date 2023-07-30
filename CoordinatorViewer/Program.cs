@@ -1,5 +1,3 @@
-using System.DirectoryServices;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace CoordinatorViewer
@@ -27,8 +25,8 @@ namespace CoordinatorViewer
                         JObject config = JObject.Parse(File.ReadAllText(config_file_result));
                         if(config.ContainsKey("auth_user") && config.ContainsKey("auth_pw"))
                         {
-                            username = config["auth_user"].ToString();
-                            password = config["auth_pw"].ToString();
+                            username = config["auth_user"]?.ToString() ?? "";
+                            password = config["auth_pw"]?.ToString() ?? "";
                             return;
                         }
                     }

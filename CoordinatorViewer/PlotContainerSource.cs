@@ -22,7 +22,7 @@ namespace CoordinatorViewer
 
         public ScatterPlotSource Add(string label, IScatterSource source)
         {
-            ScatterPlotSource plot;
+            ScatterPlotSource? plot;
             if (!plots.TryGetValue(label, out plot))
             {
                 plot = new ScatterPlotSource(forms_plot, label, source);
@@ -32,9 +32,9 @@ namespace CoordinatorViewer
             return plot;
         }
 
-        public ScatterPlotSource Get(string label)
+        public ScatterPlotSource? Get(string label)
         {
-            ScatterPlotSource plot;
+            ScatterPlotSource? plot;
             if (!plots.TryGetValue(label, out plot))
             {
                 return null;

@@ -1,6 +1,5 @@
 ﻿using ScottPlot.Plottables;
 using ScottPlot.WinForms;
-using ScottPlot;
 using ScottPlot.DataSources;
 
 namespace CoordinatorViewer

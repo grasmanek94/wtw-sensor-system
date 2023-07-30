@@ -68,11 +68,33 @@ namespace CoordinatorViewer
             return await GetData<SensorMeasurement>(response);
         }
 
-        public Task<HttpResponseMessage> GetMeasurements(string timespan, SensorLocation index)
+        public Task<HttpResponseMessage> GetMeasurements(string timespan, SensorLocation index, int? from_sequence_number = null)
         {
-            return http_client.GetAsync(new Uri(base_address, "/get/" + timespan + "/?loc=" + ((int)index).ToString()));
+            string target = "/get/" + timespan + "/?loc=" + ((int)index).ToString();
+            if(from_sequence_number.HasValue)
+            {
+                target += "&seqnr=" + from_sequence_number.Value.ToString();
+            }
+
+            return http_client.GetAsync(new Uri(base_address, target));
         }
 
+        public async Task<BindingList<SensorMeasurement>> GetVeryShortMeasurements(SensorLocation index, int? from_sequence_number = null)
+        {
+            return await GetMeasurements(GetMeasurements("very_short", index, from_sequence_number));
+        }
+
+        public async Task<BindingList<SensorMeasurement>> GetShortMeasurements(SensorLocation index, int? from_sequence_number = null)
+        {
+            return await GetMeasurements(GetMeasurements("short", index, from_sequence_number));
+        }
+
+        public async Task<BindingList<SensorMeasurement>> GetLongMeasurements(SensorLocation index, int? from_sequence_number = null)
+        {
+            return await GetMeasurements(GetMeasurements("long", index, from_sequence_number));
+        }
+
+        /*
         public Task<HttpResponseMessage> GetMeasurements(string timespan, int index)
         {
             return http_client.GetAsync(new Uri(base_address, "/get/" + timespan + "/?index=" + index.ToString()));
@@ -92,23 +114,13 @@ namespace CoordinatorViewer
         {
             return await GetMeasurements(GetMeasurements("very_short", index));
         }
-
-        public async Task<BindingList<SensorMeasurement>> GetVeryShortMeasurements(SensorLocation index)
-        {
-            return await GetMeasurements(GetMeasurements("very_short", index));
-        }
-
+     
         public async Task<BindingList<SensorMeasurement>> GetShortMeasurements(string id)
         {
             return await GetMeasurements(GetMeasurements("short", id));
         }
 
         public async Task<BindingList<SensorMeasurement>> GetShortMeasurements(int index)
-        {
-            return await GetMeasurements(GetMeasurements("short", index));
-        }
-
-        public async Task<BindingList<SensorMeasurement>> GetShortMeasurements(SensorLocation index)
         {
             return await GetMeasurements(GetMeasurements("short", index));
         }
@@ -121,11 +133,7 @@ namespace CoordinatorViewer
         public async Task<BindingList<SensorMeasurement>> GetLongMeasurements(int index)
         {
             return await GetMeasurements(GetMeasurements("long", index));
-        }
-
-        public async Task<BindingList<SensorMeasurement>> GetLongMeasurements(SensorLocation index)
-        {
-            return await GetMeasurements(GetMeasurements("long", index));
-        }
+        }   
+        */
     }
 }

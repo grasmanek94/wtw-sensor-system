@@ -131,27 +131,27 @@ namespace CoordinatorViewer
             {
                 Coordinates data;
 
-                int new_index = index;
-                int lc = (l?.Count ?? 0);
-                int sc = (s?.Count ?? 0);
-
-                if (new_index < lc)
+                if (l != null)
                 {
-                    data = new Coordinates(x(l[new_index]), y(l[new_index]));
-                    return data;
+                    if (index < l.Count)
+                    {
+                        data = new Coordinates(x(l[index]), y(l[index]));
+                        return data;
+                    }
+                    index -= l.Count;
                 }
 
-                new_index -= lc;
-
-                if (new_index < sc)
+                if (s != null)
                 {
-                    data = new Coordinates(x(s[new_index]), y(s[new_index]));
-                    return data;
+                    if (index < s.Count)
+                    {
+                        data = new Coordinates(x(s[index]), y(s[index]));
+                        return data;
+                    }
+                    index -= s.Count;
                 }
 
-                new_index -= sc;
-
-                data = new Coordinates(x(vs[new_index]), y(vs[new_index]));
+                data = new Coordinates(x(vs[index]), y(vs[index]));
                 return data;
             }
         }

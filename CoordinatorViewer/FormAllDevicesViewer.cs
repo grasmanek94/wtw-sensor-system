@@ -1,14 +1,6 @@
-using System;
 using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.InteropServices;
-using OpenTK.Graphics.ES10;
-using ScottPlot;
-using ScottPlot.Axis;
-using ScottPlot.DataSources;
-using ScottPlot.WinForms;
 
 namespace CoordinatorViewer
 {
@@ -82,26 +74,21 @@ namespace CoordinatorViewer
                     continue;
                 }
 
-                var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.sensor_location_id);
-                FormDeviceMeasurementsPlotter measurements = null;
-                if(device_entry_measurements.TryGetValue(entry, out measurements))
+                FormDeviceMeasurementsPlotter? measurements;
+                if (!device_entry_measurements.TryGetValue(entry, out measurements))
                 {
-                    if (measurements_vs.Count > 0) {
-                        measurements.Add(measurements_vs.Last());
-                    }
-                    continue;
+                    measurements = new FormDeviceMeasurementsPlotter(
+                        entry.sensor_location_id,
+                        plots_panel,
+                        pc_co2_ppm, pc_temp, pc_rh, pc_vent_state);
+                    device_entry_measurements.Add(entry, measurements);
                 }
 
+                var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.sensor_location_id);
                 var measurements_s = await coordinator_data.GetShortMeasurements(entry.sensor_location_id);
-                var measurements_l = await coordinator_data.GetLongMeasurements(entry.sensor_location_id);
+                var measurements_l = await coordinator_data.GetLongMeasurements(entry.sensor_location_id, measurements.measurements_l_seqnr);
 
-                measurements = new FormDeviceMeasurementsPlotter(
-                    entry.sensor_location_id, 
-                    measurements_vs, measurements_s, measurements_l,
-                    plots_panel,
-                    pc_co2_ppm, pc_temp, pc_rh, pc_vent_state);
-
-                device_entry_measurements.Add(entry, measurements);
+                measurements.Update(measurements_vs, measurements_s, measurements_l);
             }
 
             RunOn(plots_panel, () =>
@@ -156,13 +143,13 @@ namespace CoordinatorViewer
 
             var selected_cell = data_grid.SelectedCells[0];
 
-            
+
             int index = selected_cell.RowIndex;
             string column_name = selected_cell.OwningColumn.Name;
 
             Debug.WriteLine(index + ":" + column_name);
 
-            if(column_name == "device_id" && (ModifierKeys & Keys.Control) == Keys.Control)
+            if (column_name == "device_id" && (ModifierKeys & Keys.Control) == Keys.Control)
             {
                 OpenUrl("http://" + selected_cell.Value.ToString() + "/");
             }
@@ -193,7 +180,7 @@ namespace CoordinatorViewer
                         bool changed = false;
                         foreach (var device in devices)
                         {
-                            if (device.device_id.Length <= 0 || !device.is_associated)
+                            if (device == null || device.device_id == null || device.device_id.Length <= 0 || !device.is_associated)
                             {
                                 continue;
                             }
@@ -217,7 +204,7 @@ namespace CoordinatorViewer
                         }
                     }));
 
-                    if(await UpdateGraphs())
+                    if (await UpdateGraphs())
                     {
                         // Good job!
                     }
