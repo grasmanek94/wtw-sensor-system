@@ -19,27 +19,29 @@ device_data::device_data() :
     // !! safety !! - Occupants present = medium is required. Low is "no occupants".
     current_ventilation_state_co2{ requested_ventilation_state_medium },
     current_ventilation_state_rh{ requested_ventilation_state_medium },
-    latest_measurement{ 0, 0, 0, 0, 0, requested_ventilation_state_undefined, 0 },
-    average_measurement{ 0, 0, 0, 0, 0, requested_ventilation_state_undefined, 0 },
+    latest_measurement{},
+    average_measurement{},
     _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f }
 {}
 
-void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg, unsigned long time_span) {
+static void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg, unsigned long time_span) {
     const size_t size = container->size();
     
     avg.set_co2(0);
     avg.set_rh(0.0f);
+    avg.set_attainable_rh(0.0f);
     avg.set_temp(0.0f);
     avg.sensor_status = 0;
     avg.sequence_number = 0;
 
-    avg.state_at_this_time = requested_ventilation_state_low;
+    avg.set_state_at_this_time(requested_ventilation_state_low);
 
     tmp_avg.co2_ppm = 0.0f;
     tmp_avg.relative_humidity = 0.0f;
+    tmp_avg.attainable_humidity = 0.0f;
     tmp_avg.state_at_this_time = 0.0f;
     tmp_avg.temperature_c = 0.0f;
-
+    
     if (size > 0) {
         // initial value better be not 0 because then it will always stay at 0
         avg.sequence_number = container->at(0).sequence_number;
@@ -49,6 +51,7 @@ void get_average(RingBufInterface<measurement_entry>* container, measurement_ent
     for (int i = 0; i < size; ++i) {
         tmp_avg.co2_ppm += (float)container->at(i).get_co2();
         tmp_avg.relative_humidity += (float)container->at(i).get_rh();
+        tmp_avg.attainable_humidity += (float)container->at(i).get_attainable_rh();
         tmp_avg.temperature_c += (float)container->at(i).get_temp();
 
         MeterStatusUnion meter_status;
@@ -63,7 +66,7 @@ void get_average(RingBufInterface<measurement_entry>* container, measurement_ent
         
         avg.sensor_status = meter_status_avg.combined;
         
-        tmp_avg.state_at_this_time += (float)container->at(i).state_at_this_time;
+        tmp_avg.state_at_this_time += (float)container->at(i).get_state_at_this_time();
 
         // use min instead of max so that we don't get time traveling plots
         // when max then possible that short data is overlapping with long data etc
@@ -71,9 +74,10 @@ void get_average(RingBufInterface<measurement_entry>* container, measurement_ent
         avg.relative_time = min(avg.relative_time, container->at(i).relative_time);
     }
 
-    avg.state_at_this_time = (requested_ventilation_state)(int)round(tmp_avg.state_at_this_time /= (float)size);
+    avg.set_state_at_this_time((requested_ventilation_state)(int)round(tmp_avg.state_at_this_time /= (float)size));
     avg.set_co2(tmp_avg.co2_ppm / (float)size);
     avg.set_rh(tmp_avg.relative_humidity / (float)size);
+    avg.set_attainable_rh(tmp_avg.attainable_humidity / (float)size);
     avg.set_temp(tmp_avg.temperature_c / (float)size);
 }
 
@@ -95,8 +99,8 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
             if (outside_sensor.is_associated() && outside_sensor.has_recent_data()) {
                 const auto& outside_measurement = outside_sensor.latest_measurement;
 
-                float attainable_relative_humidity = offset_relative_humidity(outside_measurement.get_rh(), outside_measurement.get_temp(), temp_c);
-                float relative_humidity_headroom = max(rh - attainable_relative_humidity, 0.0f);
+                latest_measurement.set_attainable_rh(offset_relative_humidity(outside_measurement.get_rh(), outside_measurement.get_temp(), temp_c));
+                float relative_humidity_headroom = max(rh - latest_measurement.get_attainable_rh(), 0.0f);
 
                 use_full_rh_calculation = false;
                 current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_attainable_headroom_low, global_config_data.rh_attainable_headroom_medium, global_config_data.rh_attainable_headroom_high);
@@ -104,9 +108,12 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
         }
 
         if (use_full_rh_calculation) {
+            latest_measurement.set_attainable_rh(0.0f);
             current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_low, global_config_data.rh_medium, global_config_data.rh_high);
         }
     } else {
+        latest_measurement.set_attainable_rh(0.0f);
+
         // don't let ventilation state be determined by outside values...
         current_ventilation_state_co2 = requested_ventilation_state_low; // altough I don't expect anyone to connect a co2 sensor to the outside
         current_ventilation_state_rh = requested_ventilation_state_low;
@@ -118,7 +125,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
     latest_measurement.set_temp(temp_c);
     latest_measurement.sensor_status = sensor_status;
     latest_measurement.sequence_number = sequence_number;
-    latest_measurement.state_at_this_time = get_highest_ventilation_state(current_ventilation_state_co2, current_ventilation_state_rh);
+    latest_measurement.set_state_at_this_time(get_highest_ventilation_state(current_ventilation_state_co2, current_ventilation_state_rh));
 
     very_short_data.pushOverwrite(latest_measurement);
     ++current_very_short_push_count;
@@ -160,7 +167,6 @@ requested_ventilation_state device_data::get_highest_ventilation_state(requested
     return max(a, b);
 }
 
-
 requested_ventilation_state device_data::get_highest_ventilation_state() const {
     // if we didn't hear back from the sensor in 15m
     if (!has_recent_data()) {
@@ -197,27 +203,4 @@ String device_data::getHeaders() const {
         "short_count,\t"
         "long_count,\t")
         + latest_measurement.getHeaders();
-}
-
-String measurement_entry::toString() const
-{
-    return
-        String(relative_time)           + ",\t"
-        + String(get_co2())             + ",\t"
-        + String(get_rh())              + ",\t"
-        + String(get_temp())            + ",\t"
-        + String(sensor_status)         + ",\t"
-        + String(sequence_number)       + ",\t"
-        + String(state_at_this_time)    + "\n";
-}
-
-String measurement_entry::getHeaders() const {
-    return
-        "relative_time,\t"
-        "co2_ppm,\t"
-        "rh,\t"
-        "temp_c,\t"
-        "sensor_status,\t"
-        "sequence_number,\t"
-        "state_at_this_time\n";
 }

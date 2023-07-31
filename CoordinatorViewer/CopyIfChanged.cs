@@ -65,6 +65,11 @@
                 dest.rh = src.rh;
                 changed = true;
             }
+            if (src.attainable_rh != dest.attainable_rh)
+            {
+                dest.attainable_rh = src.attainable_rh;
+                changed = true;
+            }
             if (src.temp_c != dest.temp_c)
             {
                 dest.temp_c = src.temp_c;
