@@ -103,7 +103,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
                 float relative_humidity_headroom = max(rh - latest_measurement.get_attainable_rh(), 0.0f);
 
                 use_full_rh_calculation = false;
-                current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_attainable_headroom_low, global_config_data.rh_attainable_headroom_medium, global_config_data.rh_attainable_headroom_high);
+                current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, relative_humidity_headroom, global_config_data.rh_attainable_headroom_low, global_config_data.rh_attainable_headroom_medium, global_config_data.rh_attainable_headroom_high);
             }
         }
 
