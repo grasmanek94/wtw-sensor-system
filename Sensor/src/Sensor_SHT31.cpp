@@ -5,31 +5,37 @@
 
 static bool already_setup_Wire0 = false;
 
-Sensor_SHT31::Sensor_SHT31(int i2c_sda_pin, int i2c_scl_pin, SENSOR_LOCATION location):
-	i2c_sda_pin{ i2c_sda_pin }, i2c_scl_pin{ i2c_scl_pin }, sht31{}, 
-	last_measured_rh_value{ 0.0f }, last_measured_temp{ 0.0f },
-	new_measurement_available {false}, location{ location }
+Sensor_SHT31::Sensor_SHT31(int i2c_sda_pin, int i2c_scl_pin, 
+	SENSOR_LOCATION location,
+	float temp_offset_x, float temp_offset_y,
+	int wire):
+	Sensor_Interface{}, SensorHasTempOffset{ temp_offset_x, temp_offset_y },
+	i2c_sda_pin{ i2c_sda_pin }, i2c_scl_pin{ i2c_scl_pin }, wire{ wire },
+	sht31 {}, last_measured_rh_value{ 0.0f }, last_measured_temp{ 0.0f },
+	new_measurement_available {false}, location{ location }, i2c_intf{nullptr}
 {}
 
 Sensor_SHT31::~Sensor_SHT31()
-{}
+{
+	if (i2c_intf != nullptr) {
+		delete i2c_intf;
+		i2c_intf = nullptr;
+	}
+}
 
 void Sensor_SHT31::setup()
 {
-	// this needs to be improved sometime, 
-	// but allows for two SHT31 sensors at one unit for now
-	if (!already_setup_Wire0) {
-		already_setup_Wire0 = true;
-		Wire.begin(i2c_sda_pin, i2c_scl_pin);
-		sht31.begin(SHT31_ADDRESS, &Wire);
-		Wire.setClock(100000);
-	}
-	else {
-		Wire1.begin(i2c_sda_pin, i2c_scl_pin);
-		sht31.begin(SHT31_ADDRESS, &Wire1);
-		Wire1.setClock(100000);
+	if (i2c_intf != nullptr) {
+		delete i2c_intf;
+		i2c_intf = nullptr;
 	}
 
+	i2c_intf = new TwoWire(wire);
+	i2c_intf->begin(i2c_sda_pin, i2c_scl_pin, 100000);
+	delay(1000);
+
+	sht31.begin(SHT31_ADDRESS, i2c_intf);
+	
 	uint16_t stat = sht31.readStatus();
 	Serial.print(stat, HEX);
 	Serial.println();
@@ -56,6 +62,7 @@ void Sensor_SHT31::update()
 	{
 		last_measured_rh_value = sht31.getHumidity();
 		last_measured_temp = sht31.getTemperature();
+		adjust_temp_and_humidity(last_measured_temp, last_measured_rh_value);
 		new_measurement_available = true;
 	}
 

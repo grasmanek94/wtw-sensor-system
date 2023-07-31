@@ -19,7 +19,7 @@
 #include <Vector.h>
 
 #include <Wire.h>
-#define SENSOR_VERSION "2.0"
+#define SENSOR_VERSION "2.3"
 
 char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");
@@ -54,45 +54,66 @@ Vector<Sensor_Interface*> sensors(sensors_array);
 // inefficient but easier and faster
 LocationMeasurement measurements[(int)SENSOR_LOCATION::NUM_LOCATIONS];
 
+void convertFromJson(JsonVariantConst src, SENSOR_LOCATION& location) {
+    location = (SENSOR_LOCATION)src.as<int>();
+}
+
+template<typename T>
+T get_or_default(const JsonVariant& json, const char* key, T default_value) {
+    if (json.containsKey(key)) {
+        return json[key].as<T>();
+    }
+    return default_value;
+}
+
 sensor_entry_callback switcher{
     [&](const String& type, const JsonVariant& value) {
         switch (constexpr_hash::hash(type)) {
 #ifdef SENSOR_INTERFACE_S8_INCLUDED
         case "S8"_hash: {
-            int location = value["location"];
-            int hw_uart = value["hw_uart_nr"];
-
-            sensors.push_back(new Sensor_S8(hw_uart, (SENSOR_LOCATION)location));
+            sensors.push_back(new Sensor_S8(
+                get_or_default(value, "hw_uart_nr", 2), 
+                get_or_default(value, "location", SENSOR_LOCATION::LIVING_ROOM)
+            ));
             break;
         }
 #endif
 #ifdef SENSOR_INTERFACE_SHT4X_INCLUDED
         case "SHT4X"_hash: {
-            int location = value["location"];
-            int sda = value["sda"];
-            int scl = value["scl"];
-            int precision = value["precision"];
-
-            sensors.push_back(new Sensor_SHT4X(sda, scl, (sht4x_precision_t)precision, (SENSOR_LOCATION)location));
+            sensors.push_back(new Sensor_SHT4X(
+                get_or_default(value, "sda", 15),
+                get_or_default(value, "scl", 4),
+                get_or_default(value, "precision", sht4x_precision_t::SHT4X_HIGH_PRECISION),
+                get_or_default(value, "location", SENSOR_LOCATION::LIVING_ROOM),
+                get_or_default(value, "temp_offset_x", 1.0f),
+                get_or_default(value, "temp_offset_y", 0.0f),
+                get_or_default(value, "wire", 1)
+            ));
             break;
         }
 #endif
 #ifdef SENSOR_INTERFACE_SHT31_INCLUDED
         case "SHT31"_hash: {
-            int location = value["location"];
-            int sda = value["sda"];
-            int scl = value["scl"];
-
-            sensors.push_back(new Sensor_SHT31(sda, scl, (SENSOR_LOCATION)location));
+            sensors.push_back(new Sensor_SHT31(
+                get_or_default(value, "sda", 23),
+                get_or_default(value, "scl", 22),
+                get_or_default(value, "location", SENSOR_LOCATION::LIVING_ROOM),
+                get_or_default(value, "temp_offset_x", 1.0f),
+                get_or_default(value, "temp_offset_y", 0.0f),
+                get_or_default(value, "wire", 0)
+            ));
             break;
         }
 #endif
 #ifdef SENSOR_INTERFACE_MHZ19_INCLUDED
         case "MHZ19"_hash: {
-            int location = value["location"];
-            int hw_uart = value["hw_uart_nr"];
-
-            sensors.push_back(new Sensor_MHZ19(hw_uart, (SENSOR_LOCATION)location));
+            sensors.push_back(new Sensor_MHZ19(
+                get_or_default(value, "auto_calibration", false),
+                get_or_default(value, "hw_uart_nr", 2),
+                get_or_default(value, "location", SENSOR_LOCATION::LIVING_ROOM),
+                get_or_default(value, "temp_offset_x", 1.0f),
+                get_or_default(value, "temp_offset_y", 0.0f)
+            ));
             break;
         }
 #endif
@@ -210,14 +231,6 @@ bool fill_location_data(int location_index, char* buffer, size_t buffer_size) {
 
     snprintf(buffer, buffer_size, "%s&loc=%d", buffer, location_index, (int)sensors.front()->get_location());
 
-    float result_temp = measurements[location_index].temp_present ?
-        global_config_data.temp_offset_x * measurements[location_index].last_measured_temp + global_config_data.temp_offset_y :
-        0.0f;
-
-    float result_rh = measurements[location_index].temp_present ?
-        offset_relative_humidity(measurements[location_index].last_measured_rh_value, measurements[location_index].last_measured_temp, result_temp) :
-        measurements[location_index].last_measured_rh_value;
-
     for (auto& sensor : sensors) {
         if (sensor->is_present()) {
             if (sensor->get_location() == (SENSOR_LOCATION)location_index) {
@@ -228,12 +241,12 @@ bool fill_location_data(int location_index, char* buffer, size_t buffer_size) {
 
                 if (sensor->has_temperature()) {
                     send = true;
-                    snprintf(buffer, buffer_size, "%s&temp[%d]=%.1f", buffer, location_index, result_temp);
+                    snprintf(buffer, buffer_size, "%s&temp[%d]=%.1f", buffer, location_index, measurements[location_index].last_measured_temp);
                 }
 
                 if (sensor->has_relative_humidity()) {
                     send = true;
-                    snprintf(buffer, buffer_size, "%s&rh[%d]=%.1f", buffer, location_index, result_rh);
+                    snprintf(buffer, buffer_size, "%s&rh[%d]=%.1f", buffer, location_index, measurements[location_index].last_measured_rh_value);
                 }
 
                 if (sensor->has_meter_status()) {

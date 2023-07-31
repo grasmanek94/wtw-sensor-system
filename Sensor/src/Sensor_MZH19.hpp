@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Sensor_Interface.hpp"
+#include "SensorHasTempOffset.hpp"
 
 #include <HardwareSerial.h>
 #include <MHZ19.h>
@@ -9,7 +10,7 @@
 #define SENSOR_INTERFACE_MHZ19_INCLUDED 1
 #endif
 
-class Sensor_MHZ19: public Sensor_Interface {
+class Sensor_MHZ19: public Sensor_Interface, public SensorHasTempOffset {
 private:
 	HardwareSerial ss;
 	MHZ19 mhz;
@@ -24,7 +25,10 @@ private:
 	const unsigned long meassurement_elapsed_millis = 4000;
 
 public:
-	Sensor_MHZ19(bool auto_calibration = false, int hardware_serial_nr = 2, SENSOR_LOCATION location = (SENSOR_LOCATION)0);
+	Sensor_MHZ19(bool auto_calibration = false, int hardware_serial_nr = 2, 
+		SENSOR_LOCATION location = (SENSOR_LOCATION)0,
+		float temp_offset_x = 1.0f, float temp_offset_y = 0.0f);
+
 	virtual ~Sensor_MHZ19();
 
 	virtual void setup() override;

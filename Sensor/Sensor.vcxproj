@@ -87,6 +87,7 @@
     <ClCompile Include="src\HTTPPages.cpp" />
     <ClCompile Include="src\LittleFS.cpp" />
     <ClCompile Include="src\MyWifi.cpp" />
+    <ClCompile Include="src\SensorHasTempOffset.cpp" />
     <ClCompile Include="src\Sensor_MZH19.cpp" />
     <ClCompile Include="src\Sensor_S8.cpp" />
     <ClCompile Include="src\Sensor_SHT31.cpp" />
@@ -106,6 +107,7 @@
     <ClInclude Include="src\LittleFS.hpp" />
     <ClInclude Include="src\MeterStatus.hpp" />
     <ClInclude Include="src\MyWifi.hpp" />
+    <ClInclude Include="src\SensorHasTempOffset.hpp" />
     <ClInclude Include="src\SensorLocation.hpp" />
     <ClInclude Include="src\Sensor_Interface.hpp" />
     <ClInclude Include="src\Sensor_MZH19.hpp" />

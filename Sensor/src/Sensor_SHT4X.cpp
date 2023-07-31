@@ -3,21 +3,37 @@
 #include <Adafruit_SHT4x.h>
 #include <Wire.h>
 
-Sensor_SHT4X::Sensor_SHT4X(int i2c_sda_pin, int i2c_scl_pin, sht4x_precision_t precision, SENSOR_LOCATION location) :
-	i2c_sda_pin{ i2c_sda_pin }, i2c_scl_pin{ i2c_scl_pin }, sht4{}, precision{precision},
-    last_measured_rh_value{0.0f}, last_measured_temp{0.0f}, 
-    new_measurement_available{false}, found{false}, location{ location }
+Sensor_SHT4X::Sensor_SHT4X(int i2c_sda_pin, int i2c_scl_pin, 
+    sht4x_precision_t precision, SENSOR_LOCATION location, 
+    float temp_offset_x, float temp_offset_y,
+    int wire) :
+    Sensor_Interface{}, SensorHasTempOffset{ temp_offset_x, temp_offset_y },
+    i2c_sda_pin{ i2c_sda_pin }, i2c_scl_pin{ i2c_scl_pin }, wire{ wire }, 
+    sht4 {}, precision{ precision }, last_measured_rh_value{0.0f}, 
+    last_measured_temp{0.0f},  new_measurement_available{false}, 
+    found{false}, location{ location }, i2c_intf{ nullptr }
 {}
 
 Sensor_SHT4X::~Sensor_SHT4X()
-{}
+{
+    if (i2c_intf != nullptr) {
+        delete i2c_intf;
+        i2c_intf = nullptr;
+    }
+}
 
 void Sensor_SHT4X::setup()
 {
-    Wire1.setPins(i2c_sda_pin, i2c_scl_pin);
-    Wire1.setClock(10000);
+    if (i2c_intf != nullptr) {
+        delete i2c_intf;
+        i2c_intf = nullptr;
+    }
+
+    i2c_intf = new TwoWire(wire);
+    i2c_intf->begin(i2c_sda_pin, i2c_scl_pin, 100000);
     delay(1000);
-    if (!sht4.begin(&Wire1)) {
+
+    if (!sht4.begin(i2c_intf)) {
         found = false;
         Serial.println("SHT4x sensor NOT FOUND");
         return;
@@ -86,6 +102,7 @@ void Sensor_SHT4X::update()
     if (sht4.getEvent(&humidity, &temp)) {
         last_measured_rh_value = humidity.relative_humidity;
         last_measured_temp = temp.temperature;
+        adjust_temp_and_humidity(last_measured_temp, last_measured_rh_value);
         new_measurement_available = true;
     }
 }

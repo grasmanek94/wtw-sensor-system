@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 inline float offset_relative_humidity(float measured_humidity, float measured_temp, float offset_temp) {
     // https://engineering.stackexchange.com/a/49581/27370
     const float T1 = measured_temp;

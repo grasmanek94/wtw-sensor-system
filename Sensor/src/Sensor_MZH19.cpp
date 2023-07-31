@@ -1,7 +1,9 @@
 #include "Sensor_MZH19.hpp"
 
-Sensor_MHZ19::Sensor_MHZ19(bool auto_calibration, int hardware_serial_nr, SENSOR_LOCATION location) :
-	Sensor_Interface{}, auto_calibration{ auto_calibration},
+Sensor_MHZ19::Sensor_MHZ19(bool auto_calibration, int hardware_serial_nr, SENSOR_LOCATION location,
+	float temp_offset_x, float temp_offset_y) :
+	Sensor_Interface{}, SensorHasTempOffset{ temp_offset_x, temp_offset_y }, 
+	auto_calibration{ auto_calibration},
 	ss{ hardware_serial_nr }, mhz{}, last_measured_temp{ -273.15f },
 	last_measured_co2_ppm{ -1 }, last_measurement_time{ 0 },
 	new_measurement_available{ false }, location{ location }
@@ -34,7 +36,7 @@ void Sensor_MHZ19::update()
 	if (elapsed > meassurement_elapsed_millis) {
 		last_measurement_time = now;
 		last_measured_co2_ppm = mhz.getCO2();
-		last_measured_temp = mhz.getTemperature();
+		last_measured_temp = adjust_temp(mhz.getTemperature());
 		new_measurement_available = true;
 	}
 }

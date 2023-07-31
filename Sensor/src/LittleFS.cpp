@@ -103,17 +103,6 @@ static bool readConfig(const sensor_entry_callback& switcher) {
     global_config_data.interval = doc["interval"].as<int>();
     global_config_data.manual_calibration_performed = doc["manual_calibration_performed"].as<bool>();
 
-    // added in v1.5
-    global_config_data.temp_offset_x =
-        doc.containsKey("temp_offset_x") ?
-        doc["temp_offset_x"] :
-        1.0f;
-
-    global_config_data.temp_offset_y =
-        doc.containsKey("temp_offset_y") ?
-        doc["temp_offset_y"] :
-        0.0f;
-
     for (JsonVariant value : doc["sensors"].as<JsonArray>()) {
         switcher(value["type"].as<String>(), value);
     }
@@ -128,8 +117,6 @@ static bool saveConfig() {
     doc["auth_pw"] = global_config_data.auth_password;
     doc["interval"] = global_config_data.interval;
     doc["manual_calibration_performed"] = global_config_data.manual_calibration_performed;
-    doc["temp_offset_x"] = global_config_data.temp_offset_x;
-    doc["temp_offset_y"] = global_config_data.temp_offset_y;
 
     // write config file
     String tmp = "";

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Sensor_Interface.hpp"
+#include "SensorHasTempOffset.hpp"
 
 #include <Adafruit_SHT4x.h>
 
@@ -8,10 +9,11 @@
 #define SENSOR_INTERFACE_SHT4X_INCLUDED 1
 #endif
 
-class Sensor_SHT4X : public Sensor_Interface {
+class Sensor_SHT4X : public Sensor_Interface, public SensorHasTempOffset {
 private:
 	int i2c_sda_pin;
 	int i2c_scl_pin;
+	int wire;
 	Adafruit_SHT4x sht4;
 	sht4x_precision_t precision;
 	float last_measured_rh_value;
@@ -19,9 +21,14 @@ private:
 	bool new_measurement_available;
 	bool found;
 	SENSOR_LOCATION location;
+	TwoWire* i2c_intf;
 
 public:
-	Sensor_SHT4X(int i2c_sda_pin = 15, int i2c_scl_pin = 4, sht4x_precision_t precision = SHT4X_HIGH_PRECISION, SENSOR_LOCATION location = (SENSOR_LOCATION)0);
+	Sensor_SHT4X(int i2c_sda_pin = 15, int i2c_scl_pin = 4, 
+		sht4x_precision_t precision = SHT4X_HIGH_PRECISION, SENSOR_LOCATION location = (SENSOR_LOCATION)0, 
+		float temp_offset_x = 1.0f, float temp_offset_y = 0.0f,
+		int wire = 1);
+
 	virtual ~Sensor_SHT4X();
 
 	virtual void setup() override;

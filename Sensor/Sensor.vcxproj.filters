@@ -34,6 +34,9 @@
     <ClCompile Include="src\HTTPPages.cpp">
       <Filter>Misc Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\SensorHasTempOffset.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\LittleFS.hpp">
@@ -71,6 +74,9 @@
       <Filter>Misc Files</Filter>
     </ClInclude>
     <ClInclude Include="src\MeterStatus.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SensorHasTempOffset.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
   </ItemGroup>
