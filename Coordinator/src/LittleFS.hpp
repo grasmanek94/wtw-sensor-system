@@ -46,7 +46,11 @@ struct global_config {
     float rh_medium;
     float rh_low;
 
+    // added in v2.1
     bool use_rh_headroom_mode; // requires presence of outside/inlet temp & RH sensor (mapped to location SENSOR_LOCATION::NEW_AIR_INLET)
+    float rh_attainable_headroom_high;
+    float rh_attainable_headroom_medium;
+    float rh_attainable_headroom_low;
 };
 
 // define filename to store config file

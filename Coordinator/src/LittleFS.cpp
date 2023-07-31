@@ -141,6 +141,21 @@ static bool readConfig() {
 		doc["use_rh_headroom_mode"].as<bool>() :
 		false;
 
+	global_config_data.rh_attainable_headroom_high = 
+		doc.containsKey("rh_attainable_headroom_high") ? 
+		doc["rh_attainable_headroom_high"].as<float>() : 
+		40.0f;
+
+	global_config_data.rh_attainable_headroom_medium =
+		doc.containsKey("rh_attainable_headroom_medium") ?
+		doc["rh_attainable_headroom_medium"].as<float>() :
+		25.0f;
+
+	global_config_data.rh_attainable_headroom_low =
+		doc.containsKey("rh_attainable_headroom_low") ?
+		doc["rh_attainable_headroom_low"].as<float>() :
+		10.0f;
+
 	return true;
 }
 
@@ -157,6 +172,9 @@ static bool saveConfig() {
 	doc["rh_medium"] = global_config_data.rh_medium;
 	doc["rh_low"] = global_config_data.rh_low;
 	doc["use_rh_headroom_mode"] = global_config_data.use_rh_headroom_mode;
+	doc["rh_attainable_headroom_high"] = global_config_data.rh_attainable_headroom_high;
+	doc["rh_attainable_headroom_medium"] = global_config_data.rh_attainable_headroom_medium;
+	doc["rh_attainable_headroom_low"] = global_config_data.rh_attainable_headroom_low;
 
 	// write config file
 	String tmp = "";

@@ -1,9 +1,10 @@
 #include "RingBuf.h"
 #include "LittleFS.hpp"
 
-#include "VentilationState.hpp"
 #include "DeviceData.hpp"
+#include "HumidityOffset.hpp"
 #include "MeterStatus.hpp"
+#include "VentilationState.hpp"
 
 #include <time.h>
 
@@ -79,8 +80,37 @@ void get_average(RingBufInterface<measurement_entry>* container, measurement_ent
 void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, unsigned long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
 
-    current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);
-    current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_low, global_config_data.rh_medium, global_config_data.rh_high);
+    if (loc != SENSOR_LOCATION::NEW_AIR_INLET) {
+        bool use_full_rh_calculation = true;
+        current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);
+
+        if (global_config_data.use_rh_headroom_mode) {
+            // Here will be calculated if it is possible to attain a 'better' relative humidity inside, 
+            // i.e. if it makes any sense to ventilate more to attain a lower RH.
+            // this allows us to save energy and not ventilate when not needed.
+            // For example, if outside if 15 *C 95% RH, and inside it's 22 *C, the best attainable RH is ~61%
+            // If it's already <= 61% inside, then ventilating more won't bring it below 61%.. 
+            // It's better to not waste energy in such a case
+            const auto& outside_sensor = sensors[(int)SENSOR_LOCATION::NEW_AIR_INLET];
+            if (outside_sensor.is_associated() && outside_sensor.has_recent_data()) {
+                const auto& outside_measurement = outside_sensor.latest_measurement;
+
+                float attainable_relative_humidity = offset_relative_humidity(outside_measurement.get_rh(), outside_measurement.get_temp(), temp_c);
+                float relative_humidity_headroom = max(rh - attainable_relative_humidity, 0.0f);
+
+                use_full_rh_calculation = false;
+                current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_attainable_headroom_low, global_config_data.rh_attainable_headroom_medium, global_config_data.rh_attainable_headroom_high);
+            }
+        }
+
+        if (use_full_rh_calculation) {
+            current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_low, global_config_data.rh_medium, global_config_data.rh_high);
+        }
+    } else {
+        // don't let ventilation state be determined by outside values...
+        current_ventilation_state_co2 = requested_ventilation_state_low; // altough I don't expect anyone to connect a co2 sensor to the outside
+        current_ventilation_state_rh = requested_ventilation_state_low;
+    }
 
     latest_measurement.relative_time = now;
     latest_measurement.set_co2(co2_ppm);

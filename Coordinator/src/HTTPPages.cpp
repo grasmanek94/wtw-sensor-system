@@ -432,7 +432,10 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION_FUNC(subnet, "Subnet Mask");
 	ADD_OPTION_FUNC(primary_dns, "Primary DNS IP Address");
 	ADD_OPTION_FUNC(secondary_dns, "Secondary DNS IP Address");
-	ADD_OPTION(use_rh_headroom_mode, "Use relative humidity headroom calculations, requires presence of outside/inlet temp & RH sensor (mapped to location SENSOR_LOCATION::NEW_AIR_INLET)");
+	ADD_OPTION(use_rh_headroom_mode, "Use relative humidity headroom calculations to try to save power, requires presence of outside/inlet temp & RH sensor (mapped to location SENSOR_LOCATION::NEW_AIR_INLET)");
+	ADD_OPTION(rh_attainable_headroom_high, "(Current RH - Possible RH) : HIGH");
+	ADD_OPTION(rh_attainable_headroom_medium, "(Current RH - Possible RH) : MEDIUM");
+	ADD_OPTION(rh_attainable_headroom_low, "(Current RH - Possible RH) : LOW");
 
 #undef ADD_OPTION_FUNC
 #undef ADD_OPTION
@@ -485,6 +488,9 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_STR_FUNC(primary_dns);
 	PARSE_ENTRY_STR_FUNC(secondary_dns);
 	PARSE_ENTRY_INT(use_rh_headroom_mode);
+	PARSE_ENTRY_FLOAT(rh_attainable_headroom_high);
+	PARSE_ENTRY_FLOAT(rh_attainable_headroom_medium);
+	PARSE_ENTRY_FLOAT(rh_attainable_headroom_low);
 
 #undef PARSE_ENTRY_FLOAT
 #undef PARSE_ENTRY_INT

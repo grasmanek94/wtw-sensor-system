@@ -5,7 +5,7 @@
   "destination": "192.168.2.215",
   "auth_user": "USERNAME",
   "auth_pw": "PASSWORD",
-  "interval": "30",
+  "interval": 30,
   "co2_ppm_high": 1150,
   "co2_ppm_medium": 950,
   "co2_ppm_low": 750,
@@ -17,5 +17,8 @@
   "subnet": "255.255.255.0",
   "primary_dns": "192.168.2.254",
   "secondary_dns": "",
-  "use_rh_headroom_mode": "0"
+  "use_rh_headroom_mode": 0,
+  "rh_attainable_headroom_high": 40.0,
+  "rh_attainable_headroom_medium": 25.0,
+  "rh_attainable_headroom_low": 10.0
 }
