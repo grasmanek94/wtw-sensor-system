@@ -75,6 +75,11 @@ namespace CoordinatorViewer
             CalculateRange();
         }
 
+        public void SetYGetter(Func<SensorMeasurement, double> y)
+        {
+            this.y = y;
+        }
+
         private void CalculateRange()
         {
             foreach (var entry in this)
