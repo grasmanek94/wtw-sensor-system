@@ -4,11 +4,5 @@
     <Compile Update="FormAllDevicesViewer.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="FormDeviceMeasurementsPlotter.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="IntegerClass.cs">
-      <SubType>Form</SubType>
-    </Compile>
   </ItemGroup>
 </Project>

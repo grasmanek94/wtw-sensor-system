@@ -15,6 +15,7 @@ namespace CoordinatorViewer
 
             scatter_plot = forms_plot.Plot.Add.Scatter(source);
             scatter_plot.Label = label;
+            var x = forms_plot.Plot.Legends[0];
         }
 
         public void Dispose()

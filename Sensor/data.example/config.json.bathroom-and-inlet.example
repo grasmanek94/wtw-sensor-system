@@ -1,0 +1,29 @@
+{
+  "wifi_id": "SSID_NAME",
+  "wifi_pw": "12345678",
+  "destination": "192.168.2.216",
+  "auth_user": "USERNAME",
+  "auth_pw": "PASSWORD",
+  "interval": 15,
+  "manual_calibration_performed": 1,
+  "sensors": [
+	  {
+	    "type": "SHT31",
+	    "sda": 23,
+	    "scl": 22,
+	    "wire": 1,
+	    "location": 1,
+	    "temp_offset_x": 1,
+	    "temp_offset_y": 0
+	  },
+	  {
+	    "type": "SHT31",
+	    "sda": 15,
+	    "scl": 4,
+	    "wire": 0,
+	    "location": 5,
+	    "temp_offset_x": 1,
+	    "temp_offset_y": -1.5
+	  }
+	]
+}

@@ -1,0 +1,26 @@
+{
+  "wifi_id": "SSID_NAME",
+  "wifi_pw": "12345678",
+  "destination": "192.168.2.216",
+  "auth_user": "USERNAME",
+  "auth_pw": "PASSWORD",
+  "interval": 15,
+  "manual_calibration_performed": 1,
+  "sensors": [
+    {
+      "type": "S8",
+      "hw_uart_nr": 2,
+      "location": 0
+    },
+    {
+      "type": "SHT4X",
+      "sda": 15,
+      "scl": 4,
+      "wire": 1,
+      "precision": 0,
+      "location": 0,
+      "temp_offset_x": 1,
+      "temp_offset_y": -1.5
+    }
+  ]
+}

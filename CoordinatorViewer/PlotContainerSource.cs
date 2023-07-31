@@ -7,8 +7,8 @@ namespace CoordinatorViewer
     {
         public readonly FormsPlot forms_plot;
         public readonly Dictionary<string, ScatterPlotSource> plots;
-        private readonly double y_min;
-        private readonly double y_max;
+        public double y_min;
+        public double y_max;
 
         public PlotContainerSource(double y_min = 0.0, double y_max = 0.0) { 
             forms_plot = new FormsPlot();
