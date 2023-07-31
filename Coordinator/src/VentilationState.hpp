@@ -11,5 +11,4 @@ enum requested_ventilation_state: uint8_t {
 
 const unsigned long max_ventilation_status_http_request_timeout_s = 60;
 
-requested_ventilation_state get_highest_ventilation_state();
 void check_measurements();

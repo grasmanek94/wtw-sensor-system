@@ -12,7 +12,7 @@ global_config global_config_data;
 const size_t max_document_len = 2048;
 static StaticJsonDocument<max_document_len> doc;
 
-String global_config::get_wifi_ssid() {
+String global_config::get_wifi_ssid() const {
     return doc["wifi_id"].as<String>();
 }
 
@@ -20,7 +20,7 @@ void global_config::set_wifi_ssid(const String& wifi_ssid) {
     doc["wifi_id"] = wifi_ssid;
 }
 
-String global_config::get_wifi_password() {
+String global_config::get_wifi_password() const {
     return doc["wifi_pw"].as<String>();
 }
 
@@ -28,7 +28,7 @@ void global_config::set_wifi_password(const String& wifi_password) {
     doc["wifi_pw"] = wifi_password;
 }
 
-String global_config::get_sensors() {
+String global_config::get_sensors() const {
     String result;
     serializeJsonPretty(doc["sensors"], result);
     return result;

@@ -16,5 +16,6 @@
   "gateway_ip": "192.168.2.254",
   "subnet": "255.255.255.0",
   "primary_dns": "192.168.2.254",
-  "secondary_dns": ""
+  "secondary_dns": "",
+  "use_rh_headroom_mode": "0"
 }

@@ -11,13 +11,13 @@
 #include <functional>
 
 struct global_config {
-    String get_wifi_ssid();
+    String get_wifi_ssid() const;
     void set_wifi_ssid(const String& wifi_ssid);
 
-    String get_wifi_password();
+    String get_wifi_password() const;
     void set_wifi_password(const String& wifi_password);
 
-    String get_sensors();
+    String get_sensors() const;
     void set_sensors(const String& sensors);
 
     // frequently used stuff = cached

@@ -22,32 +22,32 @@ IPAddress static_primary_dns(INADDR_NONE);
 IPAddress static_secondary_dns(INADDR_NONE);
 
 void setup_static_ip() {
-    if (global_config_data.static_ip.length() > 0) {
+    if (global_config_data.get_static_ip().length() > 0) {
         Serial.println("Using static_ip...");
         use_static_ip = true;
 
-        if (!static_ip.fromString(global_config_data.static_ip)) {
+        if (!static_ip.fromString(global_config_data.get_static_ip())) {
             static_ip = INADDR_NONE;
             use_static_ip = false;
             Serial.println("WARN: Cannot parse static_ip");
         }
 
-        if (!static_gateway_ip.fromString(global_config_data.gateway_ip)) {
+        if (!static_gateway_ip.fromString(global_config_data.get_gateway_ip())) {
             static_gateway_ip = INADDR_NONE;
             Serial.println("WARN: Cannot parse gateway_ip");
         }
 
-        if (!static_subnet.fromString(global_config_data.subnet)) {
+        if (!static_subnet.fromString(global_config_data.get_subnet())) {
             static_subnet = INADDR_NONE;
             Serial.println("WARN: Cannot parse subnet");
         }
 
-        if (!static_primary_dns.fromString(global_config_data.primary_dns)) {
+        if (!static_primary_dns.fromString(global_config_data.get_primary_dns())) {
             static_primary_dns = INADDR_NONE;
             Serial.println("WARN: Cannot parse primary_dns");
         }
 
-        if (!static_secondary_dns.fromString(global_config_data.secondary_dns)) {
+        if (!static_secondary_dns.fromString(global_config_data.get_secondary_dns())) {
             static_secondary_dns = INADDR_NONE;
             Serial.println("WARN: Cannot parse secondary_dns");
         }
@@ -56,7 +56,7 @@ void setup_static_ip() {
 
 void init_wifi() {
     Serial.print("Hostname: ");
-    Serial.println(global_config_data.device_custom_hostname);
+    Serial.println(global_config_data.get_device_custom_hostname());
 
     WiFi.persistent(false);
     WiFi.disconnect();
@@ -69,13 +69,13 @@ void init_wifi() {
     }
 
     WiFi.mode(WIFI_MODE_NULL);
-    WiFi.setHostname(global_config_data.device_custom_hostname.c_str());
+    WiFi.setHostname(global_config_data.get_device_custom_hostname().c_str());
 
     WiFi.mode(WIFI_STA);
-    WiFi.begin(global_config_data.wifi_ssid, global_config_data.wifi_password);
+    WiFi.begin(global_config_data.get_wifi_ssid(), global_config_data.get_wifi_password());
 
     Serial.print("Connecting to WiFi '");
-    Serial.print(global_config_data.wifi_ssid);
+    Serial.print(global_config_data.get_wifi_ssid());
     Serial.print("' ..");
 
     while (WiFi.status() != WL_CONNECTED) {
@@ -85,7 +85,7 @@ void init_wifi() {
     
     Serial.println(WiFi.localIP());
 
-    if (!MDNS.begin(global_config_data.device_custom_hostname)) {
+    if (!MDNS.begin(global_config_data.get_device_custom_hostname())) {
         Serial.println("Error setting up MDNS responder!");
     }
 }
