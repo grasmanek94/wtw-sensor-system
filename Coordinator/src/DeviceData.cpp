@@ -112,7 +112,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
             current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, rh, global_config_data.rh_low, global_config_data.rh_medium, global_config_data.rh_high);
         }
     } else {
-        latest_measurement.set_attainable_rh(0.0f);
+        latest_measurement.set_attainable_rh(rh);
 
         // don't let ventilation state be determined by outside values...
         current_ventilation_state_co2 = requested_ventilation_state_low; // altough I don't expect anyone to connect a co2 sensor to the outside
