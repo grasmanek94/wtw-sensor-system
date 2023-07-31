@@ -116,11 +116,11 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
             // let's say we can attain a RH difference of 30%.. going down to 20% (e.g. in winter times).
             // But we're already between 40-60%, then it's wasteful of energy, and bad for health to ventilate RH until it's below 40%.
             // So allow some configuration to cut off higher ventilation states to some lowerbound RH value.
-            if (rh < global_config_data.rh_headroom_mode_rh_medium_bound) {
+            if (current_ventilation_state_rh >= requested_ventilation_state_high && rh < global_config_data.rh_headroom_mode_rh_medium_bound) {
                 current_ventilation_state_rh = requested_ventilation_state_medium;
             }
 
-            if (rh < global_config_data.rh_headroom_mode_rh_low_bound) {
+            if (current_ventilation_state_rh >= requested_ventilation_state_medium && rh < global_config_data.rh_headroom_mode_rh_low_bound) {
                 current_ventilation_state_rh = requested_ventilation_state_low;
             }
         }
