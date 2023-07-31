@@ -54,12 +54,12 @@ Vector<Sensor_Interface*> sensors(sensors_array);
 // inefficient but easier and faster
 LocationMeasurement measurements[(int)SENSOR_LOCATION::NUM_LOCATIONS];
 
-void convertFromJson(JsonVariantConst src, SENSOR_LOCATION& location) {
+static void convertFromJson(JsonVariantConst src, SENSOR_LOCATION& location) {
     location = (SENSOR_LOCATION)src.as<int>();
 }
 
 template<typename T>
-T get_or_default(const JsonVariant& json, const char* key, T default_value) {
+static T get_or_default(const JsonVariant& json, const char* key, T default_value) {
     if (json.containsKey(key)) {
         return json[key].as<T>();
     }

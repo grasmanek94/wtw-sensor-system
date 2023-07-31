@@ -436,6 +436,8 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION(rh_attainable_headroom_high, "(Current RH - Possible RH) : HIGH");
 	ADD_OPTION(rh_attainable_headroom_medium, "(Current RH - Possible RH) : MEDIUM");
 	ADD_OPTION(rh_attainable_headroom_low, "(Current RH - Possible RH) : LOW");
+	ADD_OPTION(rh_headroom_mode_rh_medium_bound, "When ventilation state is HIGH but RH is below medium bound, force MEDIUM RH ventilationstate");
+	ADD_OPTION(rh_headroom_mode_rh_low_bound, "When ventilation state is MEDIUM but RH is below low bound, force LOW RH ventilation state");
 
 #undef ADD_OPTION_FUNC
 #undef ADD_OPTION
@@ -491,6 +493,8 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_high);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_medium);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_low);
+	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_medium_bound);
+	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_low_bound);
 
 #undef PARSE_ENTRY_FLOAT
 #undef PARSE_ENTRY_INT

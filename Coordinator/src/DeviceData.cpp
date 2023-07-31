@@ -84,6 +84,13 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
 void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, unsigned long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
 
+    latest_measurement.relative_time = now;
+    latest_measurement.set_co2(co2_ppm);
+    latest_measurement.set_rh(rh);
+    latest_measurement.set_temp(temp_c);
+    latest_measurement.sensor_status = sensor_status;
+    latest_measurement.sequence_number = sequence_number;
+
     if (loc != SENSOR_LOCATION::NEW_AIR_INLET) {
         bool use_full_rh_calculation = true;
         current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);
@@ -105,6 +112,17 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
                 use_full_rh_calculation = false;
                 current_ventilation_state_rh = determine_current_ventilation_state(current_ventilation_state_rh, relative_humidity_headroom, global_config_data.rh_attainable_headroom_low, global_config_data.rh_attainable_headroom_medium, global_config_data.rh_attainable_headroom_high);
             }
+
+            // let's say we can attain a RH difference of 30%.. going down to 20% (e.g. in winter times).
+            // But we're already between 40-60%, then it's wasteful of energy, and bad for health to ventilate RH until it's below 40%.
+            // So allow some configuration to cut off higher ventilation states to some lowerbound RH value.
+            if (rh < global_config_data.rh_headroom_mode_rh_medium_bound) {
+                current_ventilation_state_rh = requested_ventilation_state_medium;
+            }
+
+            if (rh < global_config_data.rh_headroom_mode_rh_low_bound) {
+                current_ventilation_state_rh = requested_ventilation_state_low;
+            }
         }
 
         if (use_full_rh_calculation) {
@@ -119,12 +137,6 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
         current_ventilation_state_rh = requested_ventilation_state_low;
     }
 
-    latest_measurement.relative_time = now;
-    latest_measurement.set_co2(co2_ppm);
-    latest_measurement.set_rh(rh);
-    latest_measurement.set_temp(temp_c);
-    latest_measurement.sensor_status = sensor_status;
-    latest_measurement.sequence_number = sequence_number;
     latest_measurement.set_state_at_this_time(get_highest_ventilation_state(current_ventilation_state_co2, current_ventilation_state_rh));
 
     very_short_data.pushOverwrite(latest_measurement);

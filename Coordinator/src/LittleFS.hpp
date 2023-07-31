@@ -51,6 +51,9 @@ struct global_config {
     float rh_attainable_headroom_high;
     float rh_attainable_headroom_medium;
     float rh_attainable_headroom_low;
+    // added in v2.4
+    float rh_headroom_mode_rh_medium_bound;
+    float rh_headroom_mode_rh_low_bound;
 };
 
 // define filename to store config file

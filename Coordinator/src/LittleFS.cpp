@@ -106,6 +106,14 @@ static String readFile(String filename) {
 	return fileText;
 }
 
+template<typename T>
+static T get_or_default(const JsonVariant& json, const char* key, T default_value) {
+	if (json.containsKey(key)) {
+		return json[key].as<T>();
+	}
+	return default_value;
+}
+
 static bool readConfig() {
 	String file_content = readFile(global_config_filename);
 
@@ -136,25 +144,14 @@ static bool readConfig() {
 	global_config_data.rh_low = doc["rh_low"].as<float>();
 
 	// added in v2.1
-	global_config_data.use_rh_headroom_mode =
-		doc.containsKey("use_rh_headroom_mode") ?
-		doc["use_rh_headroom_mode"].as<bool>() :
-		false;
+	global_config_data.use_rh_headroom_mode = get_or_default(doc, "use_rh_headroom_mode", false);
+	global_config_data.rh_attainable_headroom_high = get_or_default(doc, "rh_attainable_headroom_high", 45.0f);
+	global_config_data.rh_attainable_headroom_medium = get_or_default(doc, "rh_attainable_headroom_medium", 30.0f);
+	global_config_data.rh_attainable_headroom_low = get_or_default(doc, "rh_attainable_headroom_low", 10.0f);
 
-	global_config_data.rh_attainable_headroom_high = 
-		doc.containsKey("rh_attainable_headroom_high") ? 
-		doc["rh_attainable_headroom_high"].as<float>() : 
-		40.0f;
-
-	global_config_data.rh_attainable_headroom_medium =
-		doc.containsKey("rh_attainable_headroom_medium") ?
-		doc["rh_attainable_headroom_medium"].as<float>() :
-		25.0f;
-
-	global_config_data.rh_attainable_headroom_low =
-		doc.containsKey("rh_attainable_headroom_low") ?
-		doc["rh_attainable_headroom_low"].as<float>() :
-		10.0f;
+	// added in v2.4
+	global_config_data.rh_headroom_mode_rh_medium_bound = get_or_default(doc, "rh_headroom_mode_rh_medium_bound", 90.0f);
+	global_config_data.rh_headroom_mode_rh_low_bound = get_or_default(doc, "rh_headroom_mode_rh_low_bound", 62.50);
 
 	return true;
 }
@@ -175,6 +172,8 @@ static bool saveConfig() {
 	doc["rh_attainable_headroom_high"] = global_config_data.rh_attainable_headroom_high;
 	doc["rh_attainable_headroom_medium"] = global_config_data.rh_attainable_headroom_medium;
 	doc["rh_attainable_headroom_low"] = global_config_data.rh_attainable_headroom_low;
+	doc["rh_headroom_mode_rh_medium_bound"] = global_config_data.rh_headroom_mode_rh_medium_bound;
+	doc["rh_headroom_mode_rh_low_bound"] = global_config_data.rh_headroom_mode_rh_low_bound;
 
 	// write config file
 	String tmp = "";

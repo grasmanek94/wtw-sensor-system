@@ -125,8 +125,23 @@ namespace CoordinatorViewer
 
             foreach (SensorMeasurement measurement in new_measurements)
             {
+                if (measurement.attainable_rh > 0.0f)
+                {
+                    use_headroom = true;
+                }
                 max_relative_time.max(measurement.relative_time);
                 current_measurements.Add(measurement);
+            }
+
+            if (use_headroom)
+            {
+                mv_relative_humidity.SetYGetter(y => Math.Max(y.rh - y.attainable_rh, 0.0f));
+                control_update_relative_humidity.container.y_min = -1.0f;
+                control_update_relative_humidity.container.y_max = 50.0f;
+            }
+            else
+            {
+                mv_relative_humidity.SetYGetter(y => y.rh);
             }
 
             return new_measurements.Count > 0;
@@ -173,7 +188,7 @@ namespace CoordinatorViewer
             {
                 mv_relative_humidity.SetYGetter(y => Math.Max(y.rh - y.attainable_rh, 0.0f));
                 control_update_relative_humidity.container.y_min = -1.0f;
-                control_update_relative_humidity.container.y_max = 35.0f;
+                control_update_relative_humidity.container.y_max = 50.0f;
             }
             else {
                 mv_relative_humidity.SetYGetter(y => y.rh);

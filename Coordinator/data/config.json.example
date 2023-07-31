@@ -10,7 +10,7 @@
   "co2_ppm_medium": 1000,
   "co2_ppm_low": 800,
   "rh_high": 95.0,
-  "rh_medium": 90.0,
+  "rh_medium": 85.0,
   "rh_low": 65.0,
   "static_ip": "192.168.2.216",
   "gateway_ip": "192.168.2.254",
@@ -18,7 +18,9 @@
   "primary_dns": "192.168.2.254",
   "secondary_dns": "",
   "use_rh_headroom_mode": 1,
-  "rh_attainable_headroom_high": 35.0,
-  "rh_attainable_headroom_medium": 20.0,
-  "rh_attainable_headroom_low": 10.0
+  "rh_attainable_headroom_high": 45.00,
+  "rh_attainable_headroom_medium": 30.00,
+  "rh_attainable_headroom_low": 15.00,
+  "rh_headroom_mode_rh_medium_bound": 90.00,
+  "rh_headroom_mode_rh_low_bound": 62.50
 }
