@@ -54,6 +54,15 @@ struct global_config {
     // added in v2.4
     float rh_headroom_mode_rh_medium_bound;
     float rh_headroom_mode_rh_low_bound;
+
+    // added in v2.5
+    bool use_gps_time;
+
+    int get_gps_time_uart_nr() const;
+    void set_gps_time_uart_nr(int gps_time_uart_nr);
+
+    int get_gps_baud() const;
+    void set_gps_baud(int baud);
 };
 
 // define filename to store config file

@@ -12,6 +12,14 @@ global_config global_config_data;
 const size_t max_document_len = 2048;
 static StaticJsonDocument<max_document_len> doc;
 
+template<typename T>
+static T get_or_default(const JsonVariant& json, const char* key, T default_value) {
+	if (json.containsKey(key)) {
+		return json[key].as<T>();
+	}
+	return default_value;
+}
+
 String global_config::get_wifi_ssid() const {
 	return doc["wifi_id"].as<String>();
 }
@@ -39,6 +47,7 @@ void global_config::set_device_custom_hostname(const String& device_custom_hostn
 String global_config::get_static_ip() const {
 	return doc["static_ip"].as<String>();
 }
+
 void global_config::set_static_ip(const String& static_ip) {
 	doc["static_ip"] = static_ip;
 }
@@ -46,6 +55,7 @@ void global_config::set_static_ip(const String& static_ip) {
 String global_config::get_gateway_ip() const {
 	return doc["gateway_ip"].as<String>();
 }
+
 void global_config::set_gateway_ip(const String& gateway_ip) {
 	doc["gateway_ip"] = gateway_ip;
 }
@@ -53,6 +63,7 @@ void global_config::set_gateway_ip(const String& gateway_ip) {
 String global_config::get_subnet() const {
 	return doc["subnet"].as<String>();
 }
+
 void global_config::set_subnet(const String& subnet) {
 	doc["subnet"] = subnet;
 }
@@ -60,6 +71,7 @@ void global_config::set_subnet(const String& subnet) {
 String global_config::get_primary_dns() const {
 	return doc["primary_dns"].as<String>();
 }
+
 void global_config::set_primary_dns(const String& primary_dns) {
 	doc["primary_dns"] = primary_dns;
 }
@@ -67,8 +79,26 @@ void global_config::set_primary_dns(const String& primary_dns) {
 String global_config::get_secondary_dns() const {
 	return doc["secondary_dns"].as<String>();
 }
+
 void global_config::set_secondary_dns(const String& secondary_dns) {
 	doc["secondary_dns"] = secondary_dns;
+}
+
+// added in v2.5
+int global_config::get_gps_time_uart_nr() const {
+	return get_or_default(doc, "gps_time_uart_nr", 2);
+}
+
+void global_config::set_gps_time_uart_nr(int gps_time_uart_nr) {
+	doc["gps_time_uart_nr"] = gps_time_uart_nr;
+}
+
+int global_config::get_gps_baud() const {
+	return get_or_default(doc, "baud", 9600);
+}
+
+void global_config::set_gps_baud(int baud) {
+	doc["baud"] = baud;
 }
 
 static void writeFile(String filename, String message) {
@@ -104,14 +134,6 @@ static String readFile(String filename) {
 	file.close();
 	Serial.println(file.size());
 	return fileText;
-}
-
-template<typename T>
-static T get_or_default(const JsonVariant& json, const char* key, T default_value) {
-	if (json.containsKey(key)) {
-		return json[key].as<T>();
-	}
-	return default_value;
 }
 
 static bool readConfig() {
@@ -153,6 +175,9 @@ static bool readConfig() {
 	global_config_data.rh_headroom_mode_rh_medium_bound = get_or_default(doc, "rh_headroom_mode_rh_medium_bound", 90.0f);
 	global_config_data.rh_headroom_mode_rh_low_bound = get_or_default(doc, "rh_headroom_mode_rh_low_bound", 62.50);
 
+	// added in v2.5
+	global_config_data.use_gps_time = get_or_default(doc, "use_gps_time", false);
+
 	return true;
 }
 
@@ -174,6 +199,7 @@ static bool saveConfig() {
 	doc["rh_attainable_headroom_low"] = global_config_data.rh_attainable_headroom_low;
 	doc["rh_headroom_mode_rh_medium_bound"] = global_config_data.rh_headroom_mode_rh_medium_bound;
 	doc["rh_headroom_mode_rh_low_bound"] = global_config_data.rh_headroom_mode_rh_low_bound;
+	doc["use_gps_time"] = global_config_data.use_gps_time;
 
 	// write config file
 	String tmp = "";

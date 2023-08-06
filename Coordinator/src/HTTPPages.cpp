@@ -438,6 +438,9 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION(rh_attainable_headroom_low, "(Current RH - Possible RH) : LOW");
 	ADD_OPTION(rh_headroom_mode_rh_medium_bound, "When ventilation state is HIGH but RH is below medium bound, force MEDIUM RH ventilationstate");
 	ADD_OPTION(rh_headroom_mode_rh_low_bound, "When ventilation state is MEDIUM but RH is below low bound, force LOW RH ventilation state");
+	ADD_OPTION(use_gps_time, "Use GPS time");
+	ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
+	ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
 
 #undef ADD_OPTION_FUNC
 #undef ADD_OPTION
@@ -466,6 +469,7 @@ void http_api_config(AsyncWebServerRequest* request) {
     Serial.println(global_config_data.get_##name())
 
 #define PARSE_ENTRY_STR_FUNC(name) PARSE_ENTRY_FUNC(name, )
+#define PARSE_ENTRY_INT_FUNC(name) PARSE_ENTRY_FUNC(name, .toInt())
 #define PARSE_ENTRY_STR(name) PARSE_ENTRY(name, )
 #define PARSE_ENTRY_INT(name) PARSE_ENTRY(name, .toInt())
 #define PARSE_ENTRY_FLOAT(name) PARSE_ENTRY(name, .toFloat())
@@ -495,10 +499,14 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_low);
 	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_medium_bound);
 	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_low_bound);
+	PARSE_ENTRY_INT(use_gps_time);
+	PARSE_ENTRY_INT_FUNC(gps_time_uart_nr);
+	PARSE_ENTRY_INT_FUNC(gps_baud);
 
 #undef PARSE_ENTRY_FLOAT
 #undef PARSE_ENTRY_INT
 #undef PARSE_ENTRY_STR
+#undef PARSE_ENTRY_INT_FUNC
 #undef PARSE_ENTRY_STR_FUNC
 #undef PARSE_ENTRY_FUNC
 #undef PARSE_ENTRY

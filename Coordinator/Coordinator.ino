@@ -1,16 +1,20 @@
+#include <ESP32Time.h>
+#include <TinyGPS++.h>
+#include <TinyGPSPlus.h>
 #include <ESPAsyncWebSrv.h>
 
 #include <ESPmDNS.h>
 #include <WiFi.h>
 #include <time.h>
 
-#include "src/LittleFS.hpp"
 #include "src/DeviceData.hpp"
+#include "src/GPSTime.hpp"
 #include "src/HTTPPages.hpp"
+#include "src/LittleFS.hpp"
 #include "src/VentilationState.hpp"
 #include "src/WiFiReconnect.hpp"
 
-#define COORDINATOR_VERSION "2.4"
+#define COORDINATOR_VERSION "2.5"
 
 AsyncWebServer server(80);
 
@@ -20,6 +24,7 @@ IPAddress static_gateway_ip(INADDR_NONE);
 IPAddress static_subnet(INADDR_NONE);
 IPAddress static_primary_dns(INADDR_NONE);
 IPAddress static_secondary_dns(INADDR_NONE);
+gps_time gps_time_processor;
 
 void setup_static_ip() {
     if (global_config_data.get_static_ip().length() > 0) {
@@ -103,6 +108,7 @@ void setup() {
 
     setup_static_ip();
     init_wifi();
+    gps_time_processor.setup();
 
     server.on("/get/devices", HTTP_GET, http_page_devices);
     server.on("/get/very_short", HTTP_GET, http_page_very_short_data);
@@ -150,6 +156,7 @@ void setup() {
 }
 
 void loop() {
+    gps_time_processor.update();
     check_wifi(); 
     check_measurements();
 }

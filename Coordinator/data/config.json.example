@@ -22,5 +22,8 @@
   "rh_attainable_headroom_medium": 30.00,
   "rh_attainable_headroom_low": 15.00,
   "rh_headroom_mode_rh_medium_bound": 90.00,
-  "rh_headroom_mode_rh_low_bound": 62.50
+  "rh_headroom_mode_rh_low_bound": 62.50,
+  "use_gps_time": 1,
+  "gps_time_uart_nr": 2,
+  "gps_baud": 9600
 }
