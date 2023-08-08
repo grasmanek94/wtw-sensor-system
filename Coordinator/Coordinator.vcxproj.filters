@@ -34,6 +34,9 @@
     <ClCompile Include="src\GPSTime.cpp">
       <Filter>Misc Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ESP32TimeFixed.cpp">
+      <Filter>Misc Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\LittleFS.hpp">
@@ -68,6 +71,9 @@
       <Filter>Misc Files</Filter>
     </ClInclude>
     <ClInclude Include="src\GPSTime.hpp">
+      <Filter>Misc Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ESP32TimeFixed.hpp">
       <Filter>Misc Files</Filter>
     </ClInclude>
   </ItemGroup>

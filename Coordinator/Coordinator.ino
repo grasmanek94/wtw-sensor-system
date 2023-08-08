@@ -1,4 +1,6 @@
-#include <ESP32Time.h>
+#include <Timezone_Generic.h>
+#include <Timezone_Generic.hpp>
+#include <TimeLib.h>
 #include <TinyGPS++.h>
 #include <TinyGPSPlus.h>
 #include <ESPAsyncWebSrv.h>

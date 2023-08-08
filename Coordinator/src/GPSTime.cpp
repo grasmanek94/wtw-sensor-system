@@ -1,9 +1,17 @@
 #include "GPSTime.hpp"
+#include "ESP32TimeFixed.hpp"
 #include "LittleFS.hpp"
 
-#include <ESP32Time.h>
+#include <Timezone_Generic.hpp>
+#include <TimeLib.h>
 
-const int offset_seconds = 7200;
+
+// Europe/Amsterdam Time Zone
+TimeChangeRule EU_AMS_CET = { "CET", Last, Sun, Mar, 2, 120 };   // UTC + 2 hours (daylight saving time)
+TimeChangeRule EU_AMS_CEST = { "CEST", Last, Sun, Oct, 3, 60 };    // UTC + 1 hours (standard)
+// from https://www.timeanddate.com/time/change/netherlands/amsterdam?year=2024
+
+Timezone EU_AMS(EU_AMS_CET, EU_AMS_CEST);
 
 gps_time::gps_time(): gps{nullptr}, hw_serial{nullptr} {}
 
@@ -37,7 +45,7 @@ void gps_time::setup() {
 
 	hw_serial = new HardwareSerial(global_config_data.get_gps_time_uart_nr());
 	gps = new TinyGPSPlus();
-	rtc = new ESP32Time(offset_seconds);
+	rtc = new ESP32Time(0);
 
 	hw_serial->begin(global_config_data.get_gps_baud());
 
@@ -66,29 +74,20 @@ void gps_time::update() {
 		}
 
 		// date and time valid, date or time is updated
-		rtc->setTime(gps->time.second(), gps->time.minute(), gps->time.hour(), gps->date.day(), gps->date.month(), gps->date.year());
-
+		struct tm t = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };      // Initalize to all 0's
+		t.tm_year = gps->date.year() - 1900;    // This is year-1900, so 121 = 2021
+		t.tm_mon = gps->date.month() - 1;
+		t.tm_mday = gps->date.day();
+		t.tm_hour = gps->time.hour();
+		t.tm_min = gps->time.minute();
+		t.tm_sec = gps->time.second();
+		rtc->setTime(EU_AMS.toLocal(mktime(&t)), gps->time.centisecond() * 10);
+		
 		if (!Serial) {
 			continue;
 		}
 
 		Serial.print(F("  Date/Time: "));
-
-		Serial.print(gps->date.month());
-		Serial.print(F("/"));
-		Serial.print(gps->date.day());
-		Serial.print(F("/"));
-		Serial.print(gps->date.year());
-		if (gps->time.hour() < 10) Serial.print(F("0"));
-		Serial.print(gps->time.hour());
-		Serial.print(F(":"));
-		if (gps->time.minute() < 10) Serial.print(F("0"));
-		Serial.print(gps->time.minute());
-		Serial.print(F(":"));
-		if (gps->time.second() < 10) Serial.print(F("0"));
-		Serial.print(gps->time.second());
-		Serial.print(F("."));
-		if (gps->time.centisecond() < 10) Serial.print(F("0"));
-		Serial.print(gps->time.centisecond());
+		Serial.println(rtc->getDateTime());
 	}
 }

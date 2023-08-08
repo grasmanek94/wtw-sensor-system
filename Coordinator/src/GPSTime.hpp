@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ESP32Time.h>
+#include "ESP32TimeFixed.hpp"
 #include <TinyGPSPlus.h>
 
 class gps_time {
