@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using System.Reflection;
 
 namespace CoordinatorViewer
 {
@@ -7,11 +8,16 @@ namespace CoordinatorViewer
         public static string username = "";
         public static string password = "";
 
-        static void UpdateAuth()
+        static bool UpdateAuth(string? base_path)
         {
-            string current_level = "./";
+            if(base_path == null)
+            {
+                return false;
+            }
+
+            string current_level = Path.Combine(base_path, "./");
             const string next_level = "../";
-            const string config_file = "/data/config.json";
+            const string config_file = "data/config.json";
 
             while (true)
             {
@@ -19,7 +25,7 @@ namespace CoordinatorViewer
                 
                 foreach (var d in directories)
                 {
-                    string config_file_result = d + config_file;
+                    string config_file_result = Path.Combine(d, config_file);
                     if (File.Exists(config_file_result))
                     {
                         JObject config = JObject.Parse(File.ReadAllText(config_file_result));
@@ -27,7 +33,7 @@ namespace CoordinatorViewer
                         {
                             username = config["auth_user"]?.ToString() ?? "";
                             password = config["auth_pw"]?.ToString() ?? "";
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -39,6 +45,8 @@ namespace CoordinatorViewer
                 }
                 current_level += next_level;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -51,7 +59,10 @@ namespace CoordinatorViewer
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
 
-            UpdateAuth();
+            if(!UpdateAuth(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location)))
+            {
+                UpdateAuth(Environment.CurrentDirectory);
+            }
 
             Application.Run(new FormAllDevicesViewer());
         }
