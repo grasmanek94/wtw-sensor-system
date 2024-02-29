@@ -93,7 +93,13 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
 
     if (loc != SENSOR_LOCATION::NEW_AIR_INLET) {
         bool use_full_rh_calculation = true;
-        current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);
+        float measured_inlet_temp = global_config_data.temp_setpoint_c;
+        const auto& outside_sensor = sensors[(int)SENSOR_LOCATION::NEW_AIR_INLET];
+        bool has_air_inlet_data = outside_sensor.is_associated() && outside_sensor.has_recent_data();
+
+        if (has_air_inlet_data) {
+            measured_inlet_temp = outside_sensor.latest_measurement.get_temp();
+        }
 
         if (global_config_data.use_rh_headroom_mode) {
             // Here will be calculated if it is possible to attain a 'better' relative humidity inside, 
@@ -102,8 +108,8 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
             // For example, if outside if 15 *C 95% RH, and inside it's 22 *C, the best attainable RH is ~61%
             // If it's already <= 61% inside, then ventilating more won't bring it below 61%.. 
             // It's better to not waste energy in such a case
-            const auto& outside_sensor = sensors[(int)SENSOR_LOCATION::NEW_AIR_INLET];
-            if (outside_sensor.is_associated() && outside_sensor.has_recent_data()) {
+
+            if (has_air_inlet_data) {
                 const auto& outside_measurement = outside_sensor.latest_measurement;
 
                 latest_measurement.set_attainable_rh(offset_relative_humidity(outside_measurement.get_rh(), outside_measurement.get_temp(), temp_c));
@@ -124,6 +130,9 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
                 current_ventilation_state_rh = requested_ventilation_state_low;
             }
         }
+
+        const auto& co2_data = global_config_data.get_co2_ppm_data(temp_c, measured_inlet_temp);
+        current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, co2_data.low, co2_data.medium, co2_data.high);
 
         if (use_full_rh_calculation) {
             latest_measurement.set_attainable_rh(0.0f);

@@ -20,7 +20,7 @@ float measurement_entry::get_rh() const {
 }
 
 void measurement_entry::set_co2(int co2) {
-    co2_ppm = (uint16_t)min(max(co2, 0), 2047);
+    co2_ppm = (uint16_t)min(max(co2, 0), 4095);
 }
 
 int measurement_entry::get_co2() const {

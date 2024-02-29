@@ -9,7 +9,7 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
-const int CO2_STATES = 9;
+const int CO2_STATES_COUNT = 9;
 
 struct global_config {
     String get_wifi_ssid() const;
@@ -42,15 +42,6 @@ struct global_config {
     String auth_password;
     int interval;
 
-    struct co2_ppm_state_s {
-        int high;
-        int medium;
-        int low;
-    };
-
-    int current_co2_state;
-    co2_ppm_state_s co2_states[CO2_STATES];
-
     float rh_high;
     float rh_medium;
     float rh_low;
@@ -72,6 +63,33 @@ struct global_config {
 
     int get_gps_baud() const;
     void set_gps_baud(int baud);
+
+    // added in v2.6
+    struct co2_ppm_state_s {
+        int high;
+        int medium;
+        int low;
+    };
+
+    int current_selected_co2_state;
+    co2_ppm_state_s co2_states[CO2_STATES_COUNT];
+    float temp_setpoint_c;
+
+    template <typename T> int sgn(T val) const {
+        return (T(0) < val) - (val < T(0));
+    }
+
+    const co2_ppm_state_s& get_co2_ppm_data(float measured_temp, float air_inlet_temp) const {
+        float temp_diff = ((temp_setpoint_c - measured_temp) + (temp_setpoint_c - air_inlet_temp)) * sgn(temp_setpoint_c - air_inlet_temp);
+        const static float temp_diff_progress[] = { -10.0f, -7.5f, -5.0f, -2.5f, 0.0f, 2.5f, 5.0f, 7.5f, 10.0f };
+        for (int i = 0; i < CO2_STATES_COUNT; ++i) {
+            if ( temp_diff <= temp_diff_progress[i]) {
+                return co2_states[i];
+            }
+        }
+
+        return co2_states[CO2_STATES_COUNT - 1];
+    }
 };
 
 // define filename to store config file

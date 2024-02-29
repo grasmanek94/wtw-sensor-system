@@ -9,8 +9,7 @@
    https://github.com/lorol/arduino-esp32littlefs-plugin */
 
 global_config global_config_data;
-const size_t max_document_len = 4096;
-static StaticJsonDocument<max_document_len> doc;
+static JsonDocument doc;
 
 template<typename T>
 static T get_or_default(const JsonVariant& json, const char* key, T default_value) {
@@ -142,11 +141,6 @@ static bool readConfig() {
 	int config_file_size = file_content.length();
 	Serial.println("Config file size: " + String(config_file_size));
 
-	if (config_file_size > max_document_len) {
-		Serial.println("Config file too large");
-		return false;
-	}
-
 	auto error = deserializeJson(doc, file_content);
 	if (error) {
 		Serial.println("Error interpreting config file");
@@ -158,9 +152,7 @@ static bool readConfig() {
 	global_config_data.auth_user = doc["auth_user"].as<String>();
 	global_config_data.auth_password = doc["auth_pw"].as<String>();
 	global_config_data.interval = doc["interval"].as<int>();
-	global_config_data.co2_ppm_high = doc["co2_ppm_high"].as<int>();
-	global_config_data.co2_ppm_medium = doc["co2_ppm_medium"].as<int>();
-	global_config_data.co2_ppm_low = doc["co2_ppm_low"].as<int>();
+
 	global_config_data.rh_high = doc["rh_high"].as<float>();
 	global_config_data.rh_medium = doc["rh_medium"].as<float>();
 	global_config_data.rh_low = doc["rh_low"].as<float>();
@@ -178,6 +170,17 @@ static bool readConfig() {
 	// added in v2.5
 	global_config_data.use_gps_time = get_or_default(doc, "use_gps_time", false);
 
+	// added in v2.6
+
+	for (int i = 0; i < CO2_STATES_COUNT; ++i) {
+		const auto& co2_state_data = doc["co2"]["temp_wanted_factor"][i];
+		global_config_data.co2_states[i].low = co2_state_data["low"].as<int>();
+		global_config_data.co2_states[i].medium = co2_state_data["medium"].as<int>();
+		global_config_data.co2_states[i].high = co2_state_data["high"].as<int>();
+	}
+
+	global_config_data.temp_setpoint_c = doc["co2"]["temp_setpoint_c"].as<float>();
+
 	return true;
 }
 
@@ -187,9 +190,6 @@ static bool saveConfig() {
 	doc["auth_user"] = global_config_data.auth_user;
 	doc["auth_pw"] = global_config_data.auth_password;
 	doc["interval"] = global_config_data.interval;
-	doc["co2_ppm_high"] = global_config_data.co2_ppm_high;
-	doc["co2_ppm_medium"] = global_config_data.co2_ppm_medium;
-	doc["co2_ppm_low"] = global_config_data.co2_ppm_low;
 	doc["rh_high"] = global_config_data.rh_high;
 	doc["rh_medium"] = global_config_data.rh_medium;
 	doc["rh_low"] = global_config_data.rh_low;
@@ -200,6 +200,13 @@ static bool saveConfig() {
 	doc["rh_headroom_mode_rh_medium_bound"] = global_config_data.rh_headroom_mode_rh_medium_bound;
 	doc["rh_headroom_mode_rh_low_bound"] = global_config_data.rh_headroom_mode_rh_low_bound;
 	doc["use_gps_time"] = global_config_data.use_gps_time;
+	doc["co2"]["temp_setpoint_c"] = global_config_data.temp_setpoint_c;
+	
+	for (int i = 0; i < CO2_STATES_COUNT; ++i) {
+		doc["co2"]["temp_wanted_factor"][i]["low"] = global_config_data.co2_states[i].low;
+		doc["co2"]["temp_wanted_factor"][i]["medium"] = global_config_data.co2_states[i].medium;
+		doc["co2"]["temp_wanted_factor"][i]["high"] = global_config_data.co2_states[i].high;
+	}
 
 	// write config file
 	String tmp = "";
