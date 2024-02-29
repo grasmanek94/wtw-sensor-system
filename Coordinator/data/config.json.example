@@ -26,50 +26,51 @@
   "co2": {
     "temp_setpoint_c": 20.0,
     "temp_wanted_factor": [{
-         "comment": "-10 degrees *C difference, this is the worst state, this would negatively impact the temperature in the home, e.g. warming when above setpoint, or cooling when below setpoint",
-         "low": 1600
-         "medium": 2000
-         "high": 2500
+         "comment": "-10 degrees *C difference setpoint vs inlet air temperature, in this state the setpoint can be reached much quicker by ventilating more (warm up when below setpoint, cool down when above setpoint)",
+         "low": 400,
+         "medium": 650,
+         "high": 900
       },{
          "comment": "-7.5",
-         "low": 1400
-         "medium": 1800
-         "high": 2300
+         "low": 500,
+         "medium": 700,
+         "high": 1000
       },{
          "comment": "-5.0",
-         "low": 1200
-         "medium": 1600
-         "high": 2100
+
+         "low": 550,
+         "medium": 750,
+         "high": 1150
       },{
          "comment": "-2.5",
-         "low": 1000
-         "medium": 1400
-         "high": 1750
+         "low": 600,
+         "medium": 800,
+         "high": 1100
       },{
          "comment": "0 degrees *C difference, this is the state at which ventilating will result in keeping the setpoint, no matter how much ventilation happens",
-         "low": 600
-         "medium": 900
+         "low": 600,
+         "medium": 900,
          "high": 1200
       },{
          "comment": "2.5",
-         "low": 600
-         "medium": 800
-         "high": 1100
+         "low": 1000,
+         "medium": 1400,
+         "high": 1750
       },{
          "comment": "5.0",
-         "low": 550
-         "medium": 750
-         "high": 1150
+         "low": 1200,
+         "medium": 1600,
+         "high": 2100
       },{
          "comment": "7.5",
-         "low": 500
-         "medium": 700
-         "high": 1000
+         "low": 1400,
+         "medium": 1800,
+         "high": 2300
       },{
-         "comment": "10 degrees *C difference setpoint vs inlet air temperature, in this state the setpoint can be reached much quicker by ventilating more (warm up when below setpoint, cool down when above setpoint)",
-         "low": 400
-         "medium": 650
-         "high": 900
+         "comment": "10 degrees *C difference, this is the worst state, this would negatively impact the temperature in the home, e.g. warming when above setpoint, or cooling when below setpoint",
+         "low": 1600,
+         "medium": 2000,
+         "high": 2500
       }
     }
   }

@@ -413,6 +413,11 @@ void http_page_config(AsyncWebServerRequest* request) {
 
 #define ADD_OPTION(name, description)  html += add_form_label(#name, description, String(global_config_data. name))
 #define ADD_OPTION_FUNC(name, description)  html += add_form_label(#name, description, String(global_config_data.get_##name()))
+#define ADD_OPTION_CO2(idx, name, degrees)  html += add_form_label("co2_ppm_" #name #idx, "co2_ppm_" #name " (wanted factor *C diff: " degrees ")", String(global_config_data.co2_states[idx]. name))
+#define ADD_OPTION_FULL_CO2(idx, degrees) \
+	ADD_OPTION_CO2(idx, high, degrees); \
+	ADD_OPTION_CO2(idx, medium, degrees); \
+	ADD_OPTION_CO2(idx, low, degrees)
 
 	ADD_OPTION_FUNC(wifi_ssid, "WiFi SSID");
 	ADD_OPTION_FUNC(wifi_password, "WiFi Password");
@@ -421,9 +426,6 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION(auth_user, "API User");
 	ADD_OPTION(auth_password, "API Password");
 	ADD_OPTION(interval, "Update Interval (s)");
-	ADD_OPTION(co2_ppm_high, "co2_ppm_high");
-	ADD_OPTION(co2_ppm_medium, "co2_ppm_medium");
-	ADD_OPTION(co2_ppm_low, "co2_ppm_low");
 	ADD_OPTION(rh_high, "rh_high");
 	ADD_OPTION(rh_medium, "rh_medium");
 	ADD_OPTION(rh_low, "rh_low");
@@ -442,6 +444,19 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
 	ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
 
+	ADD_OPTION(temp_setpoint_c, "Setpoint Temperature (*C) for CO2 matrix");
+	ADD_OPTION_FULL_CO2(0, "-10 (more ventilation will make home reach setpoint quicker in this state, better open windows)");
+	ADD_OPTION_FULL_CO2(1, "-7.5");
+	ADD_OPTION_FULL_CO2(2, "-5.0");
+	ADD_OPTION_FULL_CO2(3, "-2.5");
+	ADD_OPTION_FULL_CO2(4, "0.0 (ventilation level won't affect home temperature and will be at setpoint, perfect)");
+	ADD_OPTION_FULL_CO2(5, "2.5");
+	ADD_OPTION_FULL_CO2(6, "5.0");
+	ADD_OPTION_FULL_CO2(7, "7.5");
+	ADD_OPTION_FULL_CO2(8, "10 (more ventilation in this state will make home temp deviate negatively from setpoint, try to ventilate as little as possible while keeping good co2 levels)");
+
+#undef ADD_OPTION_FULL_CO2
+#undef ADD_OPTION_CO2
 #undef ADD_OPTION_FUNC
 #undef ADD_OPTION
 
