@@ -1,22 +1,21 @@
-#include <Timezone_Generic.h>
-#include <Timezone_Generic.hpp>
-#include <TimeLib.h>
-#include <TinyGPS++.h>
-#include <TinyGPSPlus.h>
+#include <Adafruit_I2CRegister.h>
+#include <Adafruit_I2CDevice.h>
+#include <Adafruit_BusIO_Register.h>
+#include <dummy.h>
 #include <ESPAsyncWebSrv.h>
 
 #include <ESPmDNS.h>
 #include <WiFi.h>
 #include <time.h>
 
-#include "src/DeviceData.hpp"
-#include "src/GPSTime.hpp"
-#include "src/HTTPPages.hpp"
-#include "src/LittleFS.hpp"
-#include "src/VentilationState.hpp"
-#include "src/WiFiReconnect.hpp"
+#include "DeviceData.hpp"
+#include "GPSTime.hpp"
+#include "HTTPPages.hpp"
+#include "LittleFS.hpp"
+#include "VentilationState.hpp"
+#include "WiFiReconnect.hpp"
 
-#define COORDINATOR_VERSION "2.5"
+#define COORDINATOR_VERSION "2.6"
 
 AsyncWebServer server(80);
 
@@ -26,7 +25,10 @@ IPAddress static_gateway_ip(INADDR_NONE);
 IPAddress static_subnet(INADDR_NONE);
 IPAddress static_primary_dns(INADDR_NONE);
 IPAddress static_secondary_dns(INADDR_NONE);
+
+#if GPS_TIME_ENABLED
 gps_time gps_time_processor;
+#endif
 
 void setup_static_ip() {
     if (global_config_data.get_static_ip().length() > 0) {
@@ -110,7 +112,9 @@ void setup() {
 
     setup_static_ip();
     init_wifi();
+#if GPS_TIME_ENABLED
     gps_time_processor.setup();
+#endif
 
     server.on("/get/devices", HTTP_GET, http_page_devices);
     server.on("/get/very_short", HTTP_GET, http_page_very_short_data);
@@ -158,7 +162,9 @@ void setup() {
 }
 
 void loop() {
+#if GPS_TIME_ENABLED
     gps_time_processor.update();
+#endif
     check_wifi(); 
     check_measurements();
 }

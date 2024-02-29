@@ -9,7 +9,7 @@
    https://github.com/lorol/arduino-esp32littlefs-plugin */
 
 global_config global_config_data;
-const size_t max_document_len = 2048;
+const size_t max_document_len = 4096;
 static StaticJsonDocument<max_document_len> doc;
 
 template<typename T>

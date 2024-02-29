@@ -9,6 +9,8 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
+const int CO2_STATES = 9;
+
 struct global_config {
     String get_wifi_ssid() const;
     void set_wifi_ssid(const String& wifi_ssid);
@@ -39,9 +41,16 @@ struct global_config {
     String auth_user;
     String auth_password;
     int interval;
-    int co2_ppm_high;
-    int co2_ppm_medium;
-    int co2_ppm_low;
+
+    struct co2_ppm_state_s {
+        int high;
+        int medium;
+        int low;
+    };
+
+    int current_co2_state;
+    co2_ppm_state_s co2_states[CO2_STATES];
+
     float rh_high;
     float rh_medium;
     float rh_low;
