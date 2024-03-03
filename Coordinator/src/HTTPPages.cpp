@@ -21,7 +21,7 @@ static const char flash_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-static const char config_html_start[] PROGMEM = R"rawliteral(
+static const char config_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
@@ -42,9 +42,33 @@ static const char config_html_start[] PROGMEM = R"rawliteral(
 </head>
 <body>
     <form action="/config" method="post">
-)rawliteral";
-
-const char config_html_end[] PROGMEM = R"rawliteral(
+	  %config_set_1%
+	  %config_set_2%
+	  %config_set_3%
+	  %config_set_4%
+	  %config_matrix_header%
+	  %config_matrix_table_partA%
+	  %config_matrix_table_partB%
+	  %config_matrix_table_partC%
+	  %config_matrix_table_partD%
+	  %config_matrix_table_partE%
+	  %config_matrix_table_partF%
+	  %config_matrix_table_partG%
+	  %config_matrix_table_partH%
+	  %config_matrix_table_partI%
+	  %config_matrix_table_partJ%
+	  %config_matrix_table_partK%
+	  %config_matrix_table_partL%
+	  %config_matrix_table_partM%
+	  %config_matrix_table_partN%
+	  %config_matrix_table_partO%
+	  %config_matrix_table_partP%
+	  %config_matrix_table_partQ%
+	  %config_matrix_table_partR%
+	  %config_matrix_table_partS%
+	  %config_matrix_table_partT%
+	  %config_matrix_table_partU%
+	  %config_matrix_footer%
       <input type="submit" value="Save + Reset ESP32">
     </form>
 </body>
@@ -416,12 +440,8 @@ static String add_form_label(String id, String name, String value) {
 		"<input type=\"text\" id=\"" + id + "\" name=\"" + id + "\" value=\"" + html_encode(value) + "\"><br>\n";
 }
 
-void http_page_config(AsyncWebServerRequest* request) {
-	if (!check_auth(request)) {
-		return request->requestAuthentication();
-	}
-
-	String html(config_html_start);
+String config_html_processor(const String& var)
+{
 
 #define ADD_OPTION(name, description)  html += add_form_label(#name, description, String(global_config_data. name))
 #define ADD_OPTION_FUNC(name, description)  html += add_form_label(#name, description, String(global_config_data.get_##name()))
@@ -431,49 +451,90 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION_CO2(idx, medium, state); \
 	ADD_OPTION_CO2(idx, low, state)
 
-	ADD_OPTION_FUNC(wifi_ssid, "WiFi SSID");
-	ADD_OPTION_FUNC(wifi_password, "WiFi Password");
-	ADD_OPTION_FUNC(device_custom_hostname, "Custom Hostname");
-	ADD_OPTION(destination_address, "Destination Address");
-	ADD_OPTION(auth_user, "API User");
-	ADD_OPTION(auth_password, "API Password");
-	ADD_OPTION(interval, "Update Interval (s)");
-	ADD_OPTION(rh_high, "rh_high");
-	ADD_OPTION(rh_medium, "rh_medium");
-	ADD_OPTION(rh_low, "rh_low");
-	ADD_OPTION_FUNC(static_ip, "Static IP Address");
-	ADD_OPTION_FUNC(gateway_ip, "Gateway IP Address");
-	ADD_OPTION_FUNC(subnet, "Subnet Mask");
-	ADD_OPTION_FUNC(primary_dns, "Primary DNS IP Address");
-	ADD_OPTION_FUNC(secondary_dns, "Secondary DNS IP Address");
-	ADD_OPTION(use_rh_headroom_mode, "Use relative humidity headroom calculations to try to save power, requires presence of outside/inlet temp & RH sensor (mapped to location SENSOR_LOCATION::NEW_AIR_INLET)");
-	ADD_OPTION(rh_attainable_headroom_high, "(Current RH - Possible RH) : HIGH");
-	ADD_OPTION(rh_attainable_headroom_medium, "(Current RH - Possible RH) : MEDIUM");
-	ADD_OPTION(rh_attainable_headroom_low, "(Current RH - Possible RH) : LOW");
-	ADD_OPTION(rh_headroom_mode_rh_medium_bound, "When ventilation state is HIGH but RH is below medium bound, force MEDIUM RH ventilationstate");
-	ADD_OPTION(rh_headroom_mode_rh_low_bound, "When ventilation state is MEDIUM but RH is below low bound, force LOW RH ventilation state");
-	ADD_OPTION(use_gps_time, "Use GPS time");
-	ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
-	ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
+	String html{};
+	if(var == "config_set_1") {
+		ADD_OPTION_FUNC(wifi_ssid, "WiFi SSID");
+		ADD_OPTION_FUNC(wifi_password, "WiFi Password");
+		ADD_OPTION_FUNC(device_custom_hostname, "Custom Hostname");
+		ADD_OPTION(destination_address, "Destination Address");
+		ADD_OPTION(auth_user, "API User");
+		ADD_OPTION(auth_password, "API Password");
+		ADD_OPTION(interval, "Update Interval (s)");
+	}
+	else if(var == "config_set_2") {
+		ADD_OPTION(rh_high, "rh_high");
+		ADD_OPTION(rh_medium, "rh_medium");
+		ADD_OPTION(rh_low, "rh_low");
+		ADD_OPTION_FUNC(static_ip, "Static IP Address");
+		ADD_OPTION_FUNC(gateway_ip, "Gateway IP Address");
+		ADD_OPTION_FUNC(subnet, "Subnet Mask");
+		ADD_OPTION_FUNC(primary_dns, "Primary DNS IP Address");
+		ADD_OPTION_FUNC(secondary_dns, "Secondary DNS IP Address");	
+	}
+	else if(var == "config_set_3") {
+		ADD_OPTION(use_rh_headroom_mode, "Use relative humidity headroom calculations to try to save power, requires presence of outside/inlet temp & RH sensor (mapped to location SENSOR_LOCATION::NEW_AIR_INLET)");
+		ADD_OPTION(rh_attainable_headroom_high, "(Current RH - Possible RH) : HIGH");
+		ADD_OPTION(rh_attainable_headroom_medium, "(Current RH - Possible RH) : MEDIUM");
+		ADD_OPTION(rh_attainable_headroom_low, "(Current RH - Possible RH) : LOW");
+	}
+	else if(var == "config_set_4") {
+		ADD_OPTION(rh_headroom_mode_rh_medium_bound, "When ventilation state is HIGH but RH is below medium bound, force MEDIUM RH ventilationstate");
+		ADD_OPTION(rh_headroom_mode_rh_low_bound, "When ventilation state is MEDIUM but RH is below low bound, force LOW RH ventilation state");
+		ADD_OPTION(use_gps_time, "Use GPS time");
+		ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
+		ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
+	}
+	else if(var == "config_matrix_header") {
+		html += "\
+		<br>\
+		<table border=\"1\">\
+		<tr>\
+		<th>Inlet-Setpoint</th>";
 
-	ADD_OPTION(temp_setpoint_c, "Setpoint Temperature (*C) for CO2 matrix");
-	ADD_OPTION_FULL_CO2(0, "-4");
-	ADD_OPTION_FULL_CO2(1, "-3");
-	ADD_OPTION_FULL_CO2(2, "-2");
-	ADD_OPTION_FULL_CO2(3, "-1");
-	ADD_OPTION_FULL_CO2(4, "0");
-	ADD_OPTION_FULL_CO2(5, "1");
-	ADD_OPTION_FULL_CO2(6, "2");
-	ADD_OPTION_FULL_CO2(7, "3");
-	ADD_OPTION_FULL_CO2(8, "4");
+		const int half_side = (CO2_MATRIX_SIDE_LENGTH - 1) / 2;
+		for(int i = -half_side; i <= half_side; ++i) {
+			html += "<th>" + String(i) + "</th>";
+		}
+
+		html += "\
+		</tr>\
+		<tr>\
+		<th>Measured-Setpoint</th>\
+		</tr>";
+	}
+	else if(var.startsWith("config_matrix_table_part")) {
+		int matrix_y = (int)(var[strlen("config_matrix_table_part")] - 'A');
+		if(matrix_y < 0 || matrix_y >= CO2_MATRIX_SIDE_LENGTH) {
+			return html;
+		}
+
+		html += "<tr><th>" + String(-10 + matrix_y) + "</th>";
+		for(int matrix_x = 0; matrix_x < CO2_MATRIX_SIDE_LENGTH; ++matrix_x) {
+			String id_name = String(matrix_y) + "-" + (matrix_x);
+
+			html += "<td><input type=\"number\" value=\"" + String(global_config_data.co2_matrix[matrix_y][matrix_x]) + "\" min=\"-4\" max=\"4\" id=\"" + id_name + "\" name=\"" + id_name + "\"></td>";				
+		}		
+		html += "</tr>";	
+	}
+	else if(var == "config_matrix_footer") {
+		html += "</table><br>";
+	}
 
 #undef ADD_OPTION_FULL_CO2
 #undef ADD_OPTION_CO2
 #undef ADD_OPTION_FUNC
 #undef ADD_OPTION
 
-	html += config_html_end;
-	request->send(200, "text/html", html);
+	return html;
+}
+
+void http_page_config(AsyncWebServerRequest* request) {
+	if (!check_auth(request)) {
+		return request->requestAuthentication();
+	}	
+
+	AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", config_html, config_html_processor);
+	request->send(response);
 }
 
 void http_api_config(AsyncWebServerRequest* request) {
