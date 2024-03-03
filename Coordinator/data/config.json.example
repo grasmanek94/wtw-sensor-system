@@ -24,79 +24,78 @@
   "rh_headroom_mode_rh_medium_bound": 90.00,
   "rh_headroom_mode_rh_low_bound": 62.50,
   "co2": {
-    "temp_setpoint_c": 20.0,
-    "temp_wanted_factor": [{
-         "comment": "4 difference setpoint vs inlet air temperature, in this state the setpoint can be reached much quicker by ventilating more (warm up when below setpoint, cool down when above setpoint)",
-         "low": 400,
-         "medium": 650,
-         "high": 900
-      },{
-         "comment": "3",
-         "low": 500,
-         "medium": 700,
-         "high": 1000
-      },{
-         "comment": "2",
-
-         "low": 550,
-         "medium": 750,
-         "high": 1150
-      },{
-         "comment": "1",
-         "low": 600,
-         "medium": 800,
-         "high": 1100
-      },{
-         "comment": "0 degrees *C difference, this is the state at which ventilating will result in keeping the setpoint, no matter how much ventilation happens",
-         "low": 600,
-         "medium": 900,
-         "high": 1200
-      },{
-         "comment": "-1",
-         "low": 1000,
-         "medium": 1400,
-         "high": 1750
-      },{
-         "comment": "-2",
-         "low": 1200,
-         "medium": 1600,
-         "high": 2100
-      },{
-         "comment": "-3",
-         "low": 1400,
-         "medium": 1800,
-         "high": 2300
-      },{
-         "comment": "-4, this is the worst state, this would negatively impact the temperature in the home, e.g. warming when above setpoint, or cooling when below setpoint",
-         "low": 1600,
-         "medium": 2000,
-         "high": 2500
-      }],
-      "matrix_comment_y": "The rows represent the measured temperature difference vs setpoint, from -10 to 10 *C.", 
-      "matrix_comment_x": "and the columns represent the inlet difference vs setpoint from -10 to 10 *C",
-      "matrix_comment_z": "The resulting value selects the corresponding temp_wanted_factor in the row/column scenario",
-      "matrix": [
-         [-4,-4,-4,-3,-2,-1, 0, 1, 1, 2, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3], 
-         [-4,-4,-4,-3,-2,-1, 0, 0, 1, 2, 2, 3, 4, 4, 3, 3, 3, 2, 2, 2, 2], 
-         [-4,-4,-4,-3,-2,-1,-1, 0, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1], 
-         [-4,-4,-4,-3,-2,-2,-1, 0, 0, 1, 2, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1], 
-         [-4,-4,-4,-3,-3,-2,-1,-1, 0, 1, 2, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1], 
-         [-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1], 
-         [-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0], 
-         [-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 1, 0, 0, 0, 0,-1,-1,-1,-1], 
-         [-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 1, 1, 0,-1,-1,-1,-1,-2,-2,-2], 
-         [-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 1, 0, 0,-1,-2,-2,-2,-2,-3,-3], 
-         [-3,-3,-3,-3,-3,-2,-1,-1, 0, 1, 2, 1, 0,-1,-1,-2,-2,-3,-3,-3,-3], 
-         [-3,-3,-2,-2,-2,-2,-1, 0, 0, 1, 2, 1, 0,-1,-2,-2,-3,-3,-4,-4,-4], 
-         [-2,-2,-2,-1,-1,-1,-1, 0, 1, 1, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4], 
-         [-1,-1,-1,-1, 0, 0, 0, 0, 1, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4], 
-         [ 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4], 
-         [ 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-2,-3,-4,-4,-4,-4], 
-         [ 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 2, 1, 0,-1,-1,-2,-3,-3,-4,-4,-4], 
-         [ 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 2, 1, 0, 0,-1,-2,-2,-3,-4,-4,-4], 
-         [ 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 2, 1, 1, 0, 1,-1,-2,-3,-4,-4,-4], 
-         [ 2, 2, 2, 2, 3, 3, 3, 4, 4, 3, 2, 2, 1, 0, 0,-1,-2,-3,-4,-4,-4], 
-         [ 3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0,-1,-2,-3,-4,-4,-4]
-      ]
-   }
+   "temp_setpoint_c": 20.0,
+   "temp_wanted_factor": [{
+      "comment": "-4, ventilate less",
+      "low": 1600,
+      "medium": 2000,
+      "high": 2500
+     },{
+      "comment": "-3",
+      "low": 1400,
+      "medium": 1800,
+      "high": 2300
+     },{
+      "comment": "-2",
+      "low": 1200,
+      "medium": 1600,
+      "high": 2100
+     },{
+      "comment": "-1",
+      "low": 1000,
+      "medium": 1400,
+      "high": 1750
+     },{
+      "comment": "0, normal ventilation",
+      "low": 600,
+      "medium": 900,
+      "high": 1200
+     },{
+      "comment": "1",
+      "low": 600,
+      "medium": 800,
+      "high": 1100
+     },{
+      "comment": "2",
+      "low": 550,
+      "medium": 750,
+      "high": 1150
+     },{
+      "comment": "3",
+      "low": 500,
+      "medium": 700,
+      "high": 1000
+     },{
+      "comment": "4, ventilate more",
+      "low": 400,
+      "medium": 650,
+      "high": 900        
+     }],
+     "matrix_comment_y": "The rows represent the measured temperature difference vs setpoint, from -10 to 10 *C.", 
+     "matrix_comment_x": "and the columns represent the inlet difference vs setpoint from -10 to 10 *C",
+     "matrix_comment_z": "The resulting value selects the corresponding temp_wanted_factor in the row/column scenario",
+     "matrix": [
+        [-4,-4,-4,-3,-2,-1, 0, 1, 1, 2, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3], 
+        [-4,-4,-4,-3,-2,-1, 0, 0, 1, 2, 2, 3, 4, 4, 3, 3, 3, 2, 2, 2, 2], 
+        [-4,-4,-4,-3,-2,-1,-1, 0, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1], 
+        [-4,-4,-4,-3,-2,-2,-1, 0, 0, 1, 2, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1], 
+        [-4,-4,-4,-3,-3,-2,-1,-1, 0, 1, 2, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1], 
+        [-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1], 
+        [-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0], 
+        [-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 1, 0, 0, 0, 0,-1,-1,-1,-1], 
+        [-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 1, 1, 0,-1,-1,-1,-1,-2,-2,-2], 
+        [-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 1, 0, 0,-1,-2,-2,-2,-2,-3,-3], 
+        [-3,-3,-3,-3,-3,-2,-1,-1, 0, 1, 2, 1, 0,-1,-1,-2,-2,-3,-3,-3,-3], 
+        [-3,-3,-2,-2,-2,-2,-1, 0, 0, 1, 2, 1, 0,-1,-2,-2,-3,-3,-4,-4,-4], 
+        [-2,-2,-2,-1,-1,-1,-1, 0, 1, 1, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4], 
+        [-1,-1,-1,-1, 0, 0, 0, 0, 1, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4], 
+        [ 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4], 
+        [ 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-2,-3,-4,-4,-4,-4], 
+        [ 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 2, 1, 0,-1,-1,-2,-3,-3,-4,-4,-4], 
+        [ 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 2, 1, 0, 0,-1,-2,-2,-3,-4,-4,-4], 
+        [ 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 2, 1, 1, 0, 1,-1,-2,-3,-4,-4,-4], 
+        [ 2, 2, 2, 2, 3, 3, 3, 4, 4, 3, 2, 2, 1, 0, 0,-1,-2,-3,-4,-4,-4], 
+        [ 3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0,-1,-2,-3,-4,-4,-4]
+     ]
+  }
 }

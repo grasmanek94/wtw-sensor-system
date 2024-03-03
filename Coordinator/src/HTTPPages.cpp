@@ -457,15 +457,15 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
 
 	ADD_OPTION(temp_setpoint_c, "Setpoint Temperature (*C) for CO2 matrix");
-	ADD_OPTION_FULL_CO2(0, "4");
-	ADD_OPTION_FULL_CO2(1, "3");
-	ADD_OPTION_FULL_CO2(2, "2");
-	ADD_OPTION_FULL_CO2(3, "1");
+	ADD_OPTION_FULL_CO2(0, "-4");
+	ADD_OPTION_FULL_CO2(1, "-3");
+	ADD_OPTION_FULL_CO2(2, "-2");
+	ADD_OPTION_FULL_CO2(3, "-1");
 	ADD_OPTION_FULL_CO2(4, "0");
-	ADD_OPTION_FULL_CO2(5, "-1");
-	ADD_OPTION_FULL_CO2(6, "-2");
-	ADD_OPTION_FULL_CO2(7, "-3");
-	ADD_OPTION_FULL_CO2(8, "-4");
+	ADD_OPTION_FULL_CO2(5, "1");
+	ADD_OPTION_FULL_CO2(6, "2");
+	ADD_OPTION_FULL_CO2(7, "3");
+	ADD_OPTION_FULL_CO2(8, "4");
 
 #undef ADD_OPTION_FULL_CO2
 #undef ADD_OPTION_CO2
