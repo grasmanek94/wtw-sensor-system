@@ -100,6 +100,24 @@ void global_config::set_gps_baud(int baud) {
 	doc["baud"] = baud;
 }
 
+const global_config::co2_ppm_state_s& global_config::get_co2_ppm_data(float measured_temp, float air_inlet_temp) const {
+	const int half_range = (CO2_MATRIX_SIDE_LENGTH - 1) / 2;
+	const int half_state = (CO2_STATES_COUNT - 1) / 2;
+
+	// adjust [-10,10] to [0,20]
+	int inlet_set_diff = min(max((int)round(air_inlet_temp - temp_setpoint_c), -half_range), half_range) + half_range;
+	int meas_set_diff = min(max((int)round(measured_temp - temp_setpoint_c), -half_range), half_range) + half_range;
+
+	// adjust [-4,4] to [0, 8]
+	int wanted_state = co2_matrix[inlet_set_diff][meas_set_diff] + half_state;
+	if(wanted_state > 0 && wanted_state < CO2_STATES_COUNT) {
+		return co2_states[wanted_state];
+	}
+
+	// fallback to middle state
+	return co2_states[half_state];
+}
+
 static void writeFile(String filename, String message) {
 	File file = LittleFS.open(filename, "w");
 	if (!file) {
@@ -181,6 +199,8 @@ static bool readConfig() {
 
 	global_config_data.temp_setpoint_c = doc["co2"]["temp_setpoint_c"].as<float>();
 
+	ArduinoJson::copyArray(doc["co2"]["matrix"], global_config_data.co2_matrix);
+
 	return true;
 }
 
@@ -207,6 +227,8 @@ static bool saveConfig() {
 		doc["co2"]["temp_wanted_factor"][i]["medium"] = global_config_data.co2_states[i].medium;
 		doc["co2"]["temp_wanted_factor"][i]["high"] = global_config_data.co2_states[i].high;
 	}
+
+	ArduinoJson::copyArray(global_config_data.co2_matrix, doc["co2"]["matrix"]);
 
 	// write config file
 	String tmp = "";

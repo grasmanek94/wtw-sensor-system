@@ -27,6 +27,18 @@ static const char config_html_start[] PROGMEM = R"rawliteral(
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">
+  <style>
+	table:not(.js) [value^="-4"] {background-color: rgb(209, 54 , 0  );}
+	table:not(.js) [value^="-3"] {background-color: rgb(255, 92 , 38 );}
+	table:not(.js) [value^="-2"] {background-color: rgb(255, 125, 82 );}
+	table:not(.js) [value^="-1"] {background-color: rgb(160, 160, 160);}
+	table:not(.js) [value^="0"]  {background-color: rgb(200, 200, 200);}
+	table:not(.js) [value^="1"]  {background-color: rgb(190, 238, 250);}
+	table:not(.js) [value^="2"]  {background-color: rgb(119, 226, 252);}
+	table:not(.js) [value^="3"]  {background-color: rgb(43 , 252, 155);}
+	table:not(.js) [value^="4"]  {background-color: rgb(4  , 181, 98 );}
+	table:not(.js) input:focus   {background-color: rgb(255, 255, 255);}
+  </style> 
 </head>
 <body>
     <form action="/config" method="post">
@@ -413,11 +425,11 @@ void http_page_config(AsyncWebServerRequest* request) {
 
 #define ADD_OPTION(name, description)  html += add_form_label(#name, description, String(global_config_data. name))
 #define ADD_OPTION_FUNC(name, description)  html += add_form_label(#name, description, String(global_config_data.get_##name()))
-#define ADD_OPTION_CO2(idx, name, degrees)  html += add_form_label("co2_ppm_" #name #idx, "co2_ppm_" #name " (wanted factor *C diff: " degrees ")", String(global_config_data.co2_states[idx]. name))
-#define ADD_OPTION_FULL_CO2(idx, degrees) \
-	ADD_OPTION_CO2(idx, high, degrees); \
-	ADD_OPTION_CO2(idx, medium, degrees); \
-	ADD_OPTION_CO2(idx, low, degrees)
+#define ADD_OPTION_CO2(idx, name, state)  html += add_form_label("co2_ppm_" #name #idx, "co2_ppm_" #name " (State " #state ")", String(global_config_data.co2_states[idx]. name))
+#define ADD_OPTION_FULL_CO2(idx, state) \
+	ADD_OPTION_CO2(idx, high, state); \
+	ADD_OPTION_CO2(idx, medium, state); \
+	ADD_OPTION_CO2(idx, low, state)
 
 	ADD_OPTION_FUNC(wifi_ssid, "WiFi SSID");
 	ADD_OPTION_FUNC(wifi_password, "WiFi Password");
@@ -445,15 +457,15 @@ void http_page_config(AsyncWebServerRequest* request) {
 	ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
 
 	ADD_OPTION(temp_setpoint_c, "Setpoint Temperature (*C) for CO2 matrix");
-	ADD_OPTION_FULL_CO2(0, "-10 (more ventilation will make home reach setpoint quicker in this state, better open windows)");
-	ADD_OPTION_FULL_CO2(1, "-7.5");
-	ADD_OPTION_FULL_CO2(2, "-5.0");
-	ADD_OPTION_FULL_CO2(3, "-2.5");
-	ADD_OPTION_FULL_CO2(4, "0.0 (ventilation level won't affect home temperature and will be at setpoint, perfect)");
-	ADD_OPTION_FULL_CO2(5, "2.5");
-	ADD_OPTION_FULL_CO2(6, "5.0");
-	ADD_OPTION_FULL_CO2(7, "7.5");
-	ADD_OPTION_FULL_CO2(8, "10 (more ventilation in this state will make home temp deviate negatively from setpoint, try to ventilate as little as possible while keeping good co2 levels)");
+	ADD_OPTION_FULL_CO2(0, "4");
+	ADD_OPTION_FULL_CO2(1, "3");
+	ADD_OPTION_FULL_CO2(2, "2");
+	ADD_OPTION_FULL_CO2(3, "1");
+	ADD_OPTION_FULL_CO2(4, "0");
+	ADD_OPTION_FULL_CO2(5, "-1");
+	ADD_OPTION_FULL_CO2(6, "-2");
+	ADD_OPTION_FULL_CO2(7, "-3");
+	ADD_OPTION_FULL_CO2(8, "-4");
 
 #undef ADD_OPTION_FULL_CO2
 #undef ADD_OPTION_CO2
@@ -483,6 +495,18 @@ void http_api_config(AsyncWebServerRequest* request) {
     global_config_data.set_##name(param->value() conversion); \
     Serial.println(global_config_data.get_##name())
 
+#define PARSE_ENTRY_CO2_STATE(idx, name) param = request->getParam("co2_ppm_" #name #idx, true); \
+    if (!param) { \
+        return request->send(HTTP_BAD_REQUEST, "text/html", "!" "co2_ppm_" #name #idx); \
+    } \
+    global_config_data.co2_states[idx]. name = param->value().toInt(); \
+    Serial.println(global_config_data.co2_states[idx]. name)
+
+#define PARSE_ENTRY_CO2_STATE_SET(idx) \
+	PARSE_ENTRY_CO2_STATE(idx, low); \
+	PARSE_ENTRY_CO2_STATE(idx, medium); \
+	PARSE_ENTRY_CO2_STATE(idx, high)
+
 #define PARSE_ENTRY_STR_FUNC(name) PARSE_ENTRY_FUNC(name, )
 #define PARSE_ENTRY_INT_FUNC(name) PARSE_ENTRY_FUNC(name, .toInt())
 #define PARSE_ENTRY_STR(name) PARSE_ENTRY(name, )
@@ -497,9 +521,6 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_STR(auth_user);
 	PARSE_ENTRY_STR(auth_password);
 	PARSE_ENTRY_INT(interval);
-	PARSE_ENTRY_INT(co2_ppm_high);
-	PARSE_ENTRY_INT(co2_ppm_medium);
-	PARSE_ENTRY_INT(co2_ppm_low);
 	PARSE_ENTRY_FLOAT(rh_high);
 	PARSE_ENTRY_FLOAT(rh_medium);
 	PARSE_ENTRY_FLOAT(rh_low);
@@ -517,7 +538,18 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_INT(use_gps_time);
 	PARSE_ENTRY_INT_FUNC(gps_time_uart_nr);
 	PARSE_ENTRY_INT_FUNC(gps_baud);
+	PARSE_ENTRY_CO2_STATE_SET(0);
+	PARSE_ENTRY_CO2_STATE_SET(1);
+	PARSE_ENTRY_CO2_STATE_SET(2);
+	PARSE_ENTRY_CO2_STATE_SET(3);
+	PARSE_ENTRY_CO2_STATE_SET(4);
+	PARSE_ENTRY_CO2_STATE_SET(5);
+	PARSE_ENTRY_CO2_STATE_SET(6);
+	PARSE_ENTRY_CO2_STATE_SET(7);
+	PARSE_ENTRY_CO2_STATE_SET(8);
 
+#undef PARSE_ENTRY_CO2_STATE
+#undef PARSE_ENTRY_CO2_STATE_SET
 #undef PARSE_ENTRY_FLOAT
 #undef PARSE_ENTRY_INT
 #undef PARSE_ENTRY_STR
