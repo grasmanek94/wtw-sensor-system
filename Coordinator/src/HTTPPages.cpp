@@ -46,6 +46,7 @@ static const char config_html[] PROGMEM = R"rawliteral(
 	  %config_set_2%
 	  %config_set_3%
 	  %config_set_4%
+	  %config_set_5%
 	  %config_matrix_header%
 	  %config_matrix_table_partA%
 	  %config_matrix_table_partB%
@@ -447,9 +448,9 @@ String config_html_processor(const String& var)
 #define ADD_OPTION_FUNC(name, description)  html += add_form_label(#name, description, String(global_config_data.get_##name()))
 #define ADD_OPTION_CO2(idx, name, state)  html += add_form_label("co2_ppm_" #name #idx, "co2_ppm_" #name " (State " #state ")", String(global_config_data.co2_states[idx]. name))
 #define ADD_OPTION_FULL_CO2(idx, state) \
-	ADD_OPTION_CO2(idx, high, state); \
+	ADD_OPTION_CO2(idx, low, state); \
 	ADD_OPTION_CO2(idx, medium, state); \
-	ADD_OPTION_CO2(idx, low, state)
+	ADD_OPTION_CO2(idx, high, state)
 
 	String html{};
 	if(var == "config_set_1") {
@@ -483,6 +484,27 @@ String config_html_processor(const String& var)
 		ADD_OPTION(use_gps_time, "Use GPS time");
 		ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
 		ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
+	}
+	else if(var == "config_set_5") {
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(0, "-4");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(1, "-3");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(2, "-2");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(3, "-1");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(4, "0");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(5, "1");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(6, "2");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(7, "3");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(8, "4");
+		html += "<br>";
 	}
 	else if(var == "config_matrix_header") {
 		html += "\
@@ -563,6 +585,13 @@ void http_api_config(AsyncWebServerRequest* request) {
     global_config_data.co2_states[idx]. name = param->value().toInt(); \
     Serial.println(global_config_data.co2_states[idx]. name)
 
+#define PARSE_ENTRY_CO2_MATRIX(x, y) param = request->getParam(String(y) + "-" + String(x), true); \
+    if (!param) { \
+        return request->send(HTTP_BAD_REQUEST, "text/html", "!" + String(y) + "-" + String(x)); \
+    } \
+    global_config_data.co2_matrix[y][x] = param->value().toInt(); \
+    Serial.println(global_config_data.co2_matrix[y][x])
+
 #define PARSE_ENTRY_CO2_STATE_SET(idx) \
 	PARSE_ENTRY_CO2_STATE(idx, low); \
 	PARSE_ENTRY_CO2_STATE(idx, medium); \
@@ -577,28 +606,36 @@ void http_api_config(AsyncWebServerRequest* request) {
 	AsyncWebParameter* param = nullptr;
 	PARSE_ENTRY_STR_FUNC(wifi_ssid);
 	PARSE_ENTRY_STR_FUNC(wifi_password);
+
 	PARSE_ENTRY_STR_FUNC(device_custom_hostname);
+
 	PARSE_ENTRY_STR(destination_address);
 	PARSE_ENTRY_STR(auth_user);
 	PARSE_ENTRY_STR(auth_password);
+
 	PARSE_ENTRY_INT(interval);
+
 	PARSE_ENTRY_FLOAT(rh_high);
 	PARSE_ENTRY_FLOAT(rh_medium);
 	PARSE_ENTRY_FLOAT(rh_low);
+
 	PARSE_ENTRY_STR_FUNC(static_ip);
 	PARSE_ENTRY_STR_FUNC(gateway_ip);
 	PARSE_ENTRY_STR_FUNC(subnet);
 	PARSE_ENTRY_STR_FUNC(primary_dns);
 	PARSE_ENTRY_STR_FUNC(secondary_dns);
+
 	PARSE_ENTRY_INT(use_rh_headroom_mode);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_high);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_medium);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_low);
 	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_medium_bound);
 	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_low_bound);
+
 	PARSE_ENTRY_INT(use_gps_time);
 	PARSE_ENTRY_INT_FUNC(gps_time_uart_nr);
 	PARSE_ENTRY_INT_FUNC(gps_baud);
+
 	PARSE_ENTRY_CO2_STATE_SET(0);
 	PARSE_ENTRY_CO2_STATE_SET(1);
 	PARSE_ENTRY_CO2_STATE_SET(2);
@@ -609,6 +646,13 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_CO2_STATE_SET(7);
 	PARSE_ENTRY_CO2_STATE_SET(8);
 
+	for(int y = 0; y < CO2_MATRIX_SIDE_LENGTH; ++y) {
+		for(int x = 0; x < CO2_MATRIX_SIDE_LENGTH; ++x) {
+			PARSE_ENTRY_CO2_MATRIX(x, y);
+		}
+	}
+
+#undef PARSE_ENTRY_CO2_MATRIX
 #undef PARSE_ENTRY_CO2_STATE
 #undef PARSE_ENTRY_CO2_STATE_SET
 #undef PARSE_ENTRY_FLOAT
