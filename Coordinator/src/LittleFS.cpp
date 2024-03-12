@@ -97,7 +97,7 @@ int global_config::get_gps_baud() const {
 }
 
 void global_config::set_gps_baud(int baud) {
-	doc["baud"] = baud;
+	doc["gps_baud"] = baud;
 }
 
 const global_config::co2_ppm_state_s& global_config::get_co2_ppm_data(float measured_temp, float air_inlet_temp) const {
@@ -118,53 +118,67 @@ const global_config::co2_ppm_state_s& global_config::get_co2_ppm_data(float meas
 	return co2_states[half_state];
 }
 
-static void writeFile(String filename, String message) {
+static bool writeFile(String filename, String message) {
 	File file = LittleFS.open(filename, "w");
 	if (!file) {
 		Serial.println("writeFile -> failed to open file for writing");
-		return;
+		return false;
 	}
+
 	if (file.print(message)) {
 		Serial.println("File written");
+		file.close();
+		return true;
 	}
-	else {
-		Serial.println("Write failed");
-	}
+
+	Serial.println("Write failed");
 	file.close();
+	return false;
 }
 
-static String readFile(String filename) {
+static bool readFile(String filename, String& contents) {
 	File file = LittleFS.open(filename);
 	if (!file) {
 		Serial.println("Failed to open file for reading, size: ");
 		Serial.println(file.size());
-		return "";
+		return false;
 	}
 
 	Serial.println("File open OK, size: ");
 	Serial.println(file.size());
 
-	String fileText = "";
+	contents = "";
 	while (file.available()) {
-		fileText += file.readString();
+		contents += file.readString();
 	}
 	file.close();
 	Serial.println(file.size());
-	return fileText;
+
+	return true;
 }
 
 static bool readConfig() {
-	String file_content = readFile(global_config_filename);
+	File file = LittleFS.open(global_config_filename);
+	if (!file) {
+		Serial.println("Failed to open file for reading, size: ");
+		Serial.println(file.size());
+		return false;
+	}
 
-	int config_file_size = file_content.length();
-	Serial.println("Config file size: " + String(config_file_size));
+	auto error = deserializeJson(doc, file);
 
-	auto error = deserializeJson(doc, file_content);
+	file.close();
 	if (error) {
 		Serial.println("Error interpreting config file");
 		Serial.println(error.c_str());
 		return false;
 	}
+
+	//file = LittleFS.open(global_config_filename);
+	//Serial.println("Contents:");
+	//Serial.println(file.readString());
+	//Serial.println("-----------");
+	//file.close();
 
 	global_config_data.destination_address = doc["destination"].as<String>();
 	global_config_data.auth_user = doc["auth_user"].as<String>();
@@ -228,12 +242,20 @@ static bool saveConfig() {
 		doc["co2"]["temp_wanted_factor"][i]["high"] = global_config_data.co2_states[i].high;
 	}
 
+	doc["co2"].remove("matrix");
 	ArduinoJson::copyArray(global_config_data.co2_matrix, doc["co2"]["matrix"]);
 
-	// write config file
-	String tmp = "";
-	serializeJson(doc, tmp);
-	writeFile(global_config_filename, tmp);
+	File file = LittleFS.open(global_config_filename, "w");
+	if (!file) {
+		Serial.println("writeFile -> failed to open file for writing");
+		return false;
+	}
+
+	size_t written = ArduinoJson::serializeJson(doc, file);
+
+	file.close();
+	Serial.print("Closed written file, written:");
+	Serial.println(written);
 
 	return true;
 }

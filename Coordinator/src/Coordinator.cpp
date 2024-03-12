@@ -91,7 +91,7 @@ void init_wifi() {
     while (WiFi.status() != WL_CONNECTED) {
         if(++try_count > 30) {
             try_count = 0;
-            Serial.println("Reconnect");
+            Serial.println(F("Reconnect"));
             WiFi.reconnect();
         } else {
             Serial.print('.');
@@ -102,7 +102,7 @@ void init_wifi() {
     Serial.println(WiFi.localIP());
 
     if (!MDNS.begin(global_config_data.get_device_custom_hostname())) {
-        Serial.println("Error setting up MDNS responder!");
+        Serial.println(F("Error setting up MDNS responder!"));
     }
 }
 
@@ -110,10 +110,14 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
 
+    Serial.print(F("Free heap: "));
+    Serial.println(String(ESP.getFreeHeap()));
+
     if (!littlefs_read_config()) {
         while (true) {
             Serial.println(F("Stalled"));
             delay(10000);
+            ESP.restart();
         }
     }
 
@@ -176,4 +180,5 @@ void loop() {
 #endif
     check_wifi(); 
     check_measurements();
+    check_http_pages_deferred_reset();
 }

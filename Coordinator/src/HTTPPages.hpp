@@ -20,3 +20,4 @@ void http_api_flash(AsyncWebServerRequest* request);
 void http_api_flash_part(AsyncWebServerRequest* request, String filename, size_t index, uint8_t* data, size_t len, bool final);
 void http_api_config(AsyncWebServerRequest* request);
 void http_page_config(AsyncWebServerRequest* request);
+void check_http_pages_deferred_reset();

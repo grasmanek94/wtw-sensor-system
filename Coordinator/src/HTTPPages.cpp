@@ -559,6 +559,8 @@ void http_page_config(AsyncWebServerRequest* request) {
 	request->send(response);
 }
 
+bool perform_deferred_reset = false;
+
 void http_api_config(AsyncWebServerRequest* request) {
 	if (!check_auth(request)) {
 		return request->requestAuthentication();
@@ -589,6 +591,9 @@ void http_api_config(AsyncWebServerRequest* request) {
     if (!param) { \
         return request->send(HTTP_BAD_REQUEST, "text/html", "!" + String(y) + "-" + String(x)); \
     } \
+	Serial.print(y);\
+	Serial.print('-');\
+	Serial.println(x);\
     global_config_data.co2_matrix[y][x] = param->value().toInt(); \
     Serial.println(global_config_data.co2_matrix[y][x])
 
@@ -664,11 +669,25 @@ void http_api_config(AsyncWebServerRequest* request) {
 #undef PARSE_ENTRY
 
 	littlefs_write_config();
+	LittleFS.end();
+	
+	Serial.print(F("Free heap: "));
+    Serial.println(String(ESP.getFreeHeap()));
+
 	if (!littlefs_read_config()) {
-		return request->send(HTTP_BAD_REQUEST, "text/html");
+		request->send(HTTP_BAD_REQUEST, "text/html");
+	} else {
+		request->send(HTTP_OK, "text/html");
 	}
 
-	request->send(HTTP_OK, "text/html");
+	perform_deferred_reset = true;
+}
 
-	ESP.restart();
+void check_http_pages_deferred_reset() {
+	if(perform_deferred_reset) {
+		perform_deferred_reset = false;
+		delay(10000);
+		LittleFS.end();
+		ESP.restart();
+	}
 }
