@@ -20,7 +20,7 @@ static T get_or_default(const JsonVariant& json, const char* key, T default_valu
 }
 
 String global_config::get_wifi_ssid() const {
-	return doc["wifi_id"].as<String>();
+	return get_or_default<String>(doc,"wifi_id", "coordinator-setup");
 }
 
 void global_config::set_wifi_ssid(const String& wifi_ssid) {
@@ -28,7 +28,7 @@ void global_config::set_wifi_ssid(const String& wifi_ssid) {
 }
 
 String global_config::get_wifi_password() const {
-	return doc["wifi_pw"].as<String>();
+	return get_or_default<String>(doc,"wifi_pw", "coordinator-setup");
 }
 
 void global_config::set_wifi_password(const String& wifi_password) {
@@ -36,7 +36,7 @@ void global_config::set_wifi_password(const String& wifi_password) {
 }
 
 String global_config::get_device_custom_hostname() const {
-	return doc["hostname"].as<String>();
+	return get_or_default<String>(doc,"hostname", "sensor-coordinator.local");
 }
 
 void global_config::set_device_custom_hostname(const String& device_custom_hostname) {
@@ -44,7 +44,7 @@ void global_config::set_device_custom_hostname(const String& device_custom_hostn
 }
 
 String global_config::get_static_ip() const {
-	return doc["static_ip"].as<String>();
+	return get_or_default<String>(doc,"static_ip", "192.168.1.2");
 }
 
 void global_config::set_static_ip(const String& static_ip) {
@@ -52,7 +52,7 @@ void global_config::set_static_ip(const String& static_ip) {
 }
 
 String global_config::get_gateway_ip() const {
-	return doc["gateway_ip"].as<String>();
+	return get_or_default<String>(doc,"gateway_ip", "192.168.1.1");
 }
 
 void global_config::set_gateway_ip(const String& gateway_ip) {
@@ -60,7 +60,7 @@ void global_config::set_gateway_ip(const String& gateway_ip) {
 }
 
 String global_config::get_subnet() const {
-	return doc["subnet"].as<String>();
+	return get_or_default<String>(doc,"subnet", "255.255.255.0");
 }
 
 void global_config::set_subnet(const String& subnet) {
@@ -68,7 +68,7 @@ void global_config::set_subnet(const String& subnet) {
 }
 
 String global_config::get_primary_dns() const {
-	return doc["primary_dns"].as<String>();
+	return get_or_default<String>(doc,"primary_dns", "192.168.1.1");
 }
 
 void global_config::set_primary_dns(const String& primary_dns) {
@@ -76,7 +76,7 @@ void global_config::set_primary_dns(const String& primary_dns) {
 }
 
 String global_config::get_secondary_dns() const {
-	return doc["secondary_dns"].as<String>();
+	return get_or_default<String>(doc,"secondary_dns", "");
 }
 
 void global_config::set_secondary_dns(const String& secondary_dns) {
@@ -180,20 +180,28 @@ static bool readConfig() {
 	//Serial.println("-----------");
 	//file.close();
 
-	global_config_data.destination_address = doc["destination"].as<String>();
-	global_config_data.auth_user = doc["auth_user"].as<String>();
-	global_config_data.auth_password = doc["auth_pw"].as<String>();
-	global_config_data.interval = doc["interval"].as<int>();
+	global_config_data.destination_address = get_or_default<String>(doc, "destination", "192.168.1.3");
+	global_config_data.auth_user = get_or_default<String>(doc, "auth_user", "sensoruser");
 
-	global_config_data.rh_high = doc["rh_high"].as<float>();
-	global_config_data.rh_medium = doc["rh_medium"].as<float>();
-	global_config_data.rh_low = doc["rh_low"].as<float>();
+	{
+		char mac_address[17];
+		mac_address[sizeof(mac_address)-1] = '0';
+		snprintf(mac_address, sizeof(mac_address), "%llX", ESP.getEfuseMac());
+
+		global_config_data.auth_password = get_or_default<String>(doc, "auth_pw", String(mac_address));
+	}
+
+	global_config_data.interval = get_or_default<int>(doc, "interval", 30);
+
+	global_config_data.rh_high = get_or_default<float>(doc, "rh_high", 95.0f);
+	global_config_data.rh_medium = get_or_default<float>(doc, "rh_medium", 90.0f);
+	global_config_data.rh_low = get_or_default<float>(doc, "rh_low", 65.0f);
 
 	// added in v2.1
-	global_config_data.use_rh_headroom_mode = get_or_default(doc, "use_rh_headroom_mode", false);
+	global_config_data.use_rh_headroom_mode = get_or_default(doc, "use_rh_headroom_mode", true);
 	global_config_data.rh_attainable_headroom_high = get_or_default(doc, "rh_attainable_headroom_high", 45.0f);
 	global_config_data.rh_attainable_headroom_medium = get_or_default(doc, "rh_attainable_headroom_medium", 30.0f);
-	global_config_data.rh_attainable_headroom_low = get_or_default(doc, "rh_attainable_headroom_low", 10.0f);
+	global_config_data.rh_attainable_headroom_low = get_or_default(doc, "rh_attainable_headroom_low", 15.0f);
 
 	// added in v2.4
 	global_config_data.rh_headroom_mode_rh_medium_bound = get_or_default(doc, "rh_headroom_mode_rh_medium_bound", 90.0f);
@@ -204,16 +212,36 @@ static bool readConfig() {
 
 	// added in v2.6
 
-	for (int i = 0; i < CO2_STATES_COUNT; ++i) {
-		const auto& co2_state_data = doc["co2"]["temp_wanted_factor"][i];
-		global_config_data.co2_states[i].low = co2_state_data["low"].as<int>();
-		global_config_data.co2_states[i].medium = co2_state_data["medium"].as<int>();
-		global_config_data.co2_states[i].high = co2_state_data["high"].as<int>();
+	if(doc.containsKey("co2")) {
+		for (int i = 0; i < CO2_STATES_COUNT; ++i) {
+			const auto& co2_state_data = doc["co2"]["temp_wanted_factor"][i];
+			global_config_data.co2_states[i].low = co2_state_data["low"].as<int>();
+			global_config_data.co2_states[i].medium = co2_state_data["medium"].as<int>();
+			global_config_data.co2_states[i].high = co2_state_data["high"].as<int>();
+		}
+
+		global_config_data.temp_setpoint_c = get_or_default<float>(doc["co2"], "temp_setpoint_c", 20.0f);
+
+		if(doc["co2"].containsKey("matrix")) {
+			ArduinoJson::copyArray(doc["co2"]["matrix"], global_config_data.co2_matrix);
+		} else {
+			memset(global_config_data.co2_matrix, 0, sizeof(global_config_data.co2_matrix));
+		}
+
+		global_config_data.use_average_temp_for_co2 = get_or_default<bool>(doc["co2"], "use_average_inside_temp", true);
+	} else {
+		for (int i = 0; i < CO2_STATES_COUNT; ++i) {
+			global_config_data.co2_states[i].low = 700;
+			global_config_data.co2_states[i].medium = 1000;
+			global_config_data.co2_states[i].high = 1300;
+		}
+
+		global_config_data.temp_setpoint_c = 20.0f;
+
+		memset(global_config_data.co2_matrix, 0, sizeof(global_config_data.co2_matrix));
+		
+		global_config_data.use_average_temp_for_co2 = true;	
 	}
-
-	global_config_data.temp_setpoint_c = doc["co2"]["temp_setpoint_c"].as<float>();
-
-	ArduinoJson::copyArray(doc["co2"]["matrix"], global_config_data.co2_matrix);
 
 	return true;
 }
@@ -235,7 +263,8 @@ static bool saveConfig() {
 	doc["rh_headroom_mode_rh_low_bound"] = global_config_data.rh_headroom_mode_rh_low_bound;
 	doc["use_gps_time"] = global_config_data.use_gps_time;
 	doc["co2"]["temp_setpoint_c"] = global_config_data.temp_setpoint_c;
-	
+	doc["co2"]["use_average_inside_temp"] = global_config_data.use_average_temp_for_co2;
+		
 	for (int i = 0; i < CO2_STATES_COUNT; ++i) {
 		doc["co2"]["temp_wanted_factor"][i]["low"] = global_config_data.co2_states[i].low;
 		doc["co2"]["temp_wanted_factor"][i]["medium"] = global_config_data.co2_states[i].medium;

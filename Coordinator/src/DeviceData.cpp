@@ -8,7 +8,9 @@
 
 #include <time.h>
 
-device_data sensors[SENSORS_COUNT];
+#include <array>
+
+std::array<device_data,SENSORS_COUNT> sensors;
 
 device_data::device_data() :
     id{ "" },
@@ -83,6 +85,8 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
 
 void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, unsigned long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
+    const float ERROR_PROBABLY_TEMP_MIN = -30.0f;
+    const float ERROR_PROBABLY_TEMP_MAX = 60.0f;
 
     latest_measurement.relative_time = now;
     latest_measurement.set_co2(co2_ppm);
@@ -92,6 +96,40 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
     latest_measurement.sequence_number = sequence_number;
 
     if (loc != SENSOR_LOCATION::NEW_AIR_INLET) {
+        float average_temp_inside_for_co2 = 0.0f;
+        int average_temps_measured_for_co2 = 0;
+
+        if(global_config_data.use_average_temp_for_co2) {
+            for(const auto& sensor: sensors) {
+                if(sensor.is_associated() && sensor.has_recent_data()) {
+                    if(sensor.loc == SENSOR_LOCATION::NEW_AIR_INLET) {
+                        continue;
+                    } 
+
+                    if(sensor.latest_measurement.get_co2() != 0) {
+                        continue;
+                    }
+
+                    if(sensor.latest_measurement.get_temp() > ERROR_PROBABLY_TEMP_MAX) {
+                        continue;
+                    }
+
+                    if(sensor.latest_measurement.get_temp() < ERROR_PROBABLY_TEMP_MIN) {
+                        continue;
+                    }
+
+                    ++average_temps_measured_for_co2;
+                    average_temp_inside_for_co2 += sensor.latest_measurement.get_temp();
+                }
+            }
+        }
+
+        if(average_temps_measured_for_co2 != 0) {
+            average_temp_inside_for_co2 /= (float)average_temps_measured_for_co2;
+        } else {
+            average_temp_inside_for_co2 = temp_c;
+        }
+
         bool use_full_rh_calculation = true;
         float measured_inlet_temp = global_config_data.temp_setpoint_c;
         const auto& outside_sensor = sensors[(int)SENSOR_LOCATION::NEW_AIR_INLET];
@@ -131,7 +169,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
             }
         }
 
-        const auto& co2_data = global_config_data.get_co2_ppm_data(temp_c, measured_inlet_temp);
+        const auto& co2_data = global_config_data.get_co2_ppm_data(average_temp_inside_for_co2, measured_inlet_temp);
         current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, co2_data.low, co2_data.medium, co2_data.high);
 
         if (use_full_rh_calculation) {

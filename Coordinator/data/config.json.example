@@ -25,6 +25,7 @@
   "rh_headroom_mode_rh_low_bound": 62.50,
   "co2": {
    "temp_setpoint_c": 20.0,
+   "use_average_inside_temp": 1,
    "temp_wanted_factor": [{
       "comment": "-4, ventilate less",
       "low": 1600,

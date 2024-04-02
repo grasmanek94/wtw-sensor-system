@@ -223,7 +223,6 @@ void http_page_devices(AsyncWebServerRequest* request) {
 	}
 
 	for (int i = 0; i < SENSORS_COUNT; ++i) {
-		auto& sensor = sensors[i];
 		devices += sensors[i].toString(i);
 	}
 
@@ -484,6 +483,7 @@ String config_html_processor(const String& var)
 		ADD_OPTION(use_gps_time, "Use GPS time");
 		ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
 		ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
+		ADD_OPTION(use_average_temp_for_co2, "Use average temperature for CO2 matrix, instead of per-sensor temperature");
 	}
 	else if(var == "config_set_5") {
 		html += "<br>";
@@ -640,6 +640,7 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_INT(use_gps_time);
 	PARSE_ENTRY_INT_FUNC(gps_time_uart_nr);
 	PARSE_ENTRY_INT_FUNC(gps_baud);
+	PARSE_ENTRY_INT(use_average_temp_for_co2);
 
 	PARSE_ENTRY_CO2_STATE_SET(0);
 	PARSE_ENTRY_CO2_STATE_SET(1);

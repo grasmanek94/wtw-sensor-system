@@ -102,6 +102,7 @@ struct global_config {
     co2_ppm_state_s co2_states[CO2_STATES_COUNT];
     float temp_setpoint_c;
     int8_t co2_matrix[CO2_MATRIX_SIDE_LENGTH][CO2_MATRIX_SIDE_LENGTH];
+    bool use_average_temp_for_co2;
 
     const co2_ppm_state_s& get_co2_ppm_data(float measured_temp, float air_inlet_temp) const;
 };
