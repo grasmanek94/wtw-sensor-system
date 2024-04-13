@@ -11,6 +11,30 @@
 global_config global_config_data;
 static JsonDocument doc;
 
+static const int CO2_MATRIX_DEFAULT[CO2_MATRIX_SIDE_LENGTH][CO2_MATRIX_SIDE_LENGTH] PROGMEM = {
+    {-4,-4,-4,-3,-2,-1, 0, 1, 1, 2, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3}, 
+    {-4,-4,-4,-3,-2,-1, 0, 0, 1, 2, 2, 3, 4, 4, 3, 3, 3, 2, 2, 2, 2}, 
+    {-4,-4,-4,-3,-2,-1,-1, 0, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1}, 
+    {-4,-4,-4,-3,-2,-2,-1, 0, 0, 1, 2, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1}, 
+    {-4,-4,-4,-3,-3,-2,-1,-1, 0, 1, 2, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1}, 
+    {-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1}, 
+    {-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0}, 
+    {-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 1, 0, 0, 0, 0,-1,-1,-1,-1}, 
+    {-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 1, 1, 0,-1,-1,-1,-1,-2,-2,-2}, 
+    {-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 1, 0, 0,-1,-2,-2,-2,-2,-3,-3}, 
+    {-3,-3,-3,-3,-3,-2,-1,-1, 0, 1, 2, 1, 0,-1,-1,-2,-2,-3,-3,-3,-3}, 
+    {-3,-3,-2,-2,-2,-2,-1, 0, 0, 1, 2, 1, 0,-1,-2,-2,-3,-3,-4,-4,-4}, 
+    {-2,-2,-2,-1,-1,-1,-1, 0, 1, 1, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4}, 
+    {-1,-1,-1,-1, 0, 0, 0, 0, 1, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4}, 
+    { 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4}, 
+    { 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-2,-3,-4,-4,-4,-4}, 
+    { 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 2, 1, 0,-1,-1,-2,-3,-3,-4,-4,-4}, 
+    { 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 2, 1, 0, 0,-1,-2,-2,-3,-4,-4,-4}, 
+    { 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 2, 1, 1, 0, 1,-1,-2,-3,-4,-4,-4}, 
+    { 2, 2, 2, 2, 3, 3, 3, 4, 4, 3, 2, 2, 1, 0, 0,-1,-2,-3,-4,-4,-4}, 
+    { 3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0,-1,-2,-3,-4,-4,-4} 
+};
+
 template<typename T>
 static T get_or_default(const JsonVariant& json, const char* key, T default_value) {
 	if (json.containsKey(key)) {
@@ -211,6 +235,9 @@ static bool readConfig() {
 	global_config_data.use_gps_time = get_or_default(doc, "use_gps_time", false);
 
 	// added in v2.6
+	for(int i = 0; i < (CO2_MATRIX_SIDE_LENGTH * CO2_MATRIX_SIDE_LENGTH); ++i) {
+		((int8_t*)global_config_data.co2_matrix)[i] = pgm_read_byte(CO2_MATRIX_DEFAULT + i);
+	}
 
 	if(doc.containsKey("co2")) {
 		for (int i = 0; i < CO2_STATES_COUNT; ++i) {
@@ -224,22 +251,18 @@ static bool readConfig() {
 
 		if(doc["co2"].containsKey("matrix")) {
 			ArduinoJson::copyArray(doc["co2"]["matrix"], global_config_data.co2_matrix);
-		} else {
-			memset(global_config_data.co2_matrix, 0, sizeof(global_config_data.co2_matrix));
 		}
 
 		global_config_data.use_average_temp_for_co2 = get_or_default<bool>(doc["co2"], "use_average_inside_temp", true);
 	} else {
 		for (int i = 0; i < CO2_STATES_COUNT; ++i) {
-			global_config_data.co2_states[i].low = 700;
-			global_config_data.co2_states[i].medium = 1000;
-			global_config_data.co2_states[i].high = 1300;
+			global_config_data.co2_states[i].low = 1600 - (133 * i);
+			global_config_data.co2_states[i].medium = 2000 - (150 * i);
+			global_config_data.co2_states[i].high = 2500 - (177 * i);
 		}
 
 		global_config_data.temp_setpoint_c = 20.0f;
 
-		memset(global_config_data.co2_matrix, 0, sizeof(global_config_data.co2_matrix));
-		
 		global_config_data.use_average_temp_for_co2 = true;	
 	}
 
