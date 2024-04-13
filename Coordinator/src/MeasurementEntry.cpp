@@ -8,7 +8,8 @@ measurement_entry::measurement_entry() :
     attainable_humidity{ 0 },
     state_at_this_time{ requested_ventilation_state_undefined },
     sensor_status{ 0 },
-    sequence_number{ 0 }
+    sequence_number{ 0 },
+    co2_matrix_state{ 0 }
 {}
 
 void measurement_entry::set_rh(float rh) {
@@ -51,6 +52,14 @@ requested_ventilation_state measurement_entry::get_state_at_this_time() const {
     return state_at_this_time;
 }
 
+void measurement_entry::set_co2_matrix_state(int state) {
+    co2_matrix_state = (uint8_t)min(max(state, 0), 9);
+}
+
+unsigned int measurement_entry::get_co2_matrix_state() const {
+    return co2_matrix_state;
+}
+
 String measurement_entry::toString() const
 {
     return
@@ -61,7 +70,8 @@ String measurement_entry::toString() const
         + String(get_temp()) + ",\t"
         + String(sensor_status) + ",\t"
         + String(sequence_number) + ",\t"
-        + String(state_at_this_time) + "\n";
+        + String(state_at_this_time) + ",\t"
+        + String(co2_matrix_state) + "\n";
 }
 
 String measurement_entry::getHeaders() const {
@@ -73,5 +83,6 @@ String measurement_entry::getHeaders() const {
         "temp_c,\t"
         "sensor_status,\t"
         "sequence_number,\t"
-        "state_at_this_time\n";
+        "state_at_this_time,\t"
+        "co2_matrix_state\n";
 }

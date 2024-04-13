@@ -23,7 +23,7 @@ device_data::device_data() :
     current_ventilation_state_rh{ requested_ventilation_state_medium },
     latest_measurement{},
     average_measurement{},
-    _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f }
+    _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }
 {}
 
 static void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg, unsigned long time_span) {
@@ -43,7 +43,8 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
     tmp_avg.attainable_humidity = 0.0f;
     tmp_avg.state_at_this_time = 0.0f;
     tmp_avg.temperature_c = 0.0f;
-    
+    tmp_avg.co2_matrix_state = 0.0f;
+     
     if (size > 0) {
         // initial value better be not 0 because then it will always stay at 0
         avg.sequence_number = container->at(0).sequence_number;
@@ -55,6 +56,7 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
         tmp_avg.relative_humidity += (float)container->at(i).get_rh();
         tmp_avg.attainable_humidity += (float)container->at(i).get_attainable_rh();
         tmp_avg.temperature_c += (float)container->at(i).get_temp();
+        tmp_avg.co2_matrix_state += (float)container->at(i).get_co2_matrix_state();
 
         MeterStatusUnion meter_status;
         MeterStatusUnion meter_status_avg;
@@ -76,17 +78,19 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
         avg.relative_time = min(avg.relative_time, container->at(i).relative_time);
     }
 
-    avg.set_state_at_this_time((requested_ventilation_state)(int)round(tmp_avg.state_at_this_time /= (float)size));
+    avg.set_state_at_this_time((requested_ventilation_state)(int)round(tmp_avg.state_at_this_time / (float)size));
     avg.set_co2(tmp_avg.co2_ppm / (float)size);
     avg.set_rh(tmp_avg.relative_humidity / (float)size);
     avg.set_attainable_rh(tmp_avg.attainable_humidity / (float)size);
     avg.set_temp(tmp_avg.temperature_c / (float)size);
+    avg.set_co2_matrix_state(round(tmp_avg.co2_matrix_state / (float)size));
 }
 
 void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, unsigned long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
     const float ERROR_PROBABLY_TEMP_MIN = -30.0f;
     const float ERROR_PROBABLY_TEMP_MAX = 60.0f;
+    const int DEFAULT_CO2_MATRIX_STATE = 4;
 
     latest_measurement.relative_time = now;
     latest_measurement.set_co2(co2_ppm);
@@ -94,6 +98,7 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
     latest_measurement.set_temp(temp_c);
     latest_measurement.sensor_status = sensor_status;
     latest_measurement.sequence_number = sequence_number;
+    latest_measurement.set_co2_matrix_state(DEFAULT_CO2_MATRIX_STATE);
 
     if (loc != SENSOR_LOCATION::NEW_AIR_INLET) {
         float average_temp_inside_for_co2 = 0.0f;
@@ -169,7 +174,10 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
             }
         }
 
-        const auto& co2_data = global_config_data.get_co2_ppm_data(average_temp_inside_for_co2, measured_inlet_temp);
+        int co2_matrix_state = 0;
+        const auto& co2_data = global_config_data.get_co2_ppm_data(average_temp_inside_for_co2, measured_inlet_temp, co2_matrix_state);
+        latest_measurement.set_co2_matrix_state(co2_matrix_state);
+
         current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, co2_data.low, co2_data.medium, co2_data.high);
 
         if (use_full_rh_calculation) {

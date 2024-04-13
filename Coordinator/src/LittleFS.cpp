@@ -124,7 +124,7 @@ void global_config::set_gps_baud(int baud) {
 	doc["gps_baud"] = baud;
 }
 
-const global_config::co2_ppm_state_s& global_config::get_co2_ppm_data(float measured_temp, float air_inlet_temp) const {
+const global_config::co2_ppm_state_s& global_config::get_co2_ppm_data(float measured_temp, float air_inlet_temp, int& co2_state_matrix_entry) const {
 	const int half_range = (CO2_MATRIX_SIDE_LENGTH - 1) / 2;
 	const int half_state = (CO2_STATES_COUNT - 1) / 2;
 
@@ -134,11 +134,13 @@ const global_config::co2_ppm_state_s& global_config::get_co2_ppm_data(float meas
 
 	// adjust [-4,4] to [0, 8]
 	int wanted_state = co2_matrix[inlet_set_diff][meas_set_diff] + half_state;
-	if(wanted_state > 0 && wanted_state < CO2_STATES_COUNT) {
+	if(wanted_state >= 0 && wanted_state < CO2_STATES_COUNT) {
+		co2_state_matrix_entry = wanted_state;
 		return co2_states[wanted_state];
 	}
 
 	// fallback to middle state
+	co2_state_matrix_entry = half_state;
 	return co2_states[half_state];
 }
 
@@ -235,8 +237,10 @@ static bool readConfig() {
 	global_config_data.use_gps_time = get_or_default(doc, "use_gps_time", false);
 
 	// added in v2.6
-	for(int i = 0; i < (CO2_MATRIX_SIDE_LENGTH * CO2_MATRIX_SIDE_LENGTH); ++i) {
-		((int8_t*)global_config_data.co2_matrix)[i] = pgm_read_byte(CO2_MATRIX_DEFAULT + i);
+	for(int x = 0; x < CO2_MATRIX_SIDE_LENGTH; ++x) {
+		for(int y = 0; y < CO2_MATRIX_SIDE_LENGTH; ++y) {
+		global_config_data.co2_matrix[y][x] = pgm_read_byte((&CO2_MATRIX_DEFAULT[y][x]));
+	 }
 	}
 
 	if(doc.containsKey("co2")) {
@@ -256,9 +260,9 @@ static bool readConfig() {
 		global_config_data.use_average_temp_for_co2 = get_or_default<bool>(doc["co2"], "use_average_inside_temp", true);
 	} else {
 		for (int i = 0; i < CO2_STATES_COUNT; ++i) {
-			global_config_data.co2_states[i].low = 1600 - (133 * i);
+			global_config_data.co2_states[i].low = 1600 - (130 * i);
 			global_config_data.co2_states[i].medium = 2000 - (150 * i);
-			global_config_data.co2_states[i].high = 2500 - (177 * i);
+			global_config_data.co2_states[i].high = 2500 - (180 * i);
 		}
 
 		global_config_data.temp_setpoint_c = 20.0f;
