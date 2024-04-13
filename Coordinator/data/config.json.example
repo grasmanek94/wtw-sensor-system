@@ -28,49 +28,49 @@
    "use_average_inside_temp": 1,
    "temp_wanted_factor": [{
       "comment": "-4, ventilate less",
-      "low": 1600,
-      "medium": 2000,
-      "high": 2500
-     },{
-      "comment": "-3",
-      "low": 1400,
-      "medium": 1800,
-      "high": 2300
-     },{
-      "comment": "-2",
-      "low": 1200,
-      "medium": 1600,
+      "low": 1300,
+      "medium": 1750,
       "high": 2100
      },{
+      "comment": "-3",
+      "low": 1200,
+      "medium": 1600,
+      "high": 2000
+     },{
+      "comment": "-2",
+      "low": 1100,
+      "medium": 1500,
+      "high": 1900
+     },{
       "comment": "-1",
-      "low": 1000,
-      "medium": 1400,
-      "high": 1750
+      "low": 1050,
+      "medium": 1250,
+      "high": 1700
      },{
       "comment": "0, normal ventilation",
-      "low": 600,
-      "medium": 900,
-      "high": 1200
+      "low": 950,
+      "medium": 1100,
+      "high": 1600
      },{
       "comment": "1",
-      "low": 600,
-      "medium": 800,
-      "high": 1100
+      "low": 950,
+      "medium": 1100,
+      "high": 1500
      },{
       "comment": "2",
-      "low": 550,
-      "medium": 750,
-      "high": 1150
+      "low": 900,
+      "medium": 1000,
+      "high": 1400
      },{
       "comment": "3",
-      "low": 500,
-      "medium": 700,
-      "high": 1000
+      "low": 800,
+      "medium": 900,
+      "high": 1300
      },{
       "comment": "4, ventilate more",
-      "low": 400,
-      "medium": 650,
-      "high": 900        
+      "low": 700,
+      "medium": 900,
+      "high": 1250        
      }],
      "matrix_comment_y": "The rows represent the measured temperature difference vs setpoint, from -10 to 10 *C.", 
      "matrix_comment_x": "and the columns represent the inlet difference vs setpoint from -10 to 10 *C",
