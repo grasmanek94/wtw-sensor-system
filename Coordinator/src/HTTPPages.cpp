@@ -511,7 +511,7 @@ String config_html_processor(const String& var)
 		<br>\
 		<table border=\"1\">\
 		<tr>\
-		<th>Inlet-Setpoint</th>";
+		<th>Measured-Setpoint</th>";
 
 		const int half_side = (CO2_MATRIX_SIDE_LENGTH - 1) / 2;
 		for(int i = -half_side; i <= half_side; ++i) {
@@ -521,7 +521,7 @@ String config_html_processor(const String& var)
 		html += "\
 		</tr>\
 		<tr>\
-		<th>Measured-Setpoint</th>\
+		<th>Inlet-Setpoint</th>\
 		</tr>";
 	}
 	else if(var.startsWith("config_matrix_table_part")) {
