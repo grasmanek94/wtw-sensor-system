@@ -72,7 +72,8 @@ struct global_config {
         int medium;
         int low;
     };
-
+    
+    // added in v2.7
     co2_ppm_state_s conservative_co2_state;
     co2_ppm_state_s aggressive_co2_state;
     

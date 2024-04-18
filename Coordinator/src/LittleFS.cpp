@@ -241,7 +241,7 @@ static bool readConfig() {
 	// added in v2.5
 	global_config_data.use_gps_time = get_or_default(doc, "use_gps_time", false);
 
-	// added in v2.6
+	// added in v2.7
 	if(doc.containsKey("co2")) {
 		global_config_data.temp_setpoint_c = get_or_default<float>(doc["co2"], "temp_setpoint_c", 20.0f);
 		global_config_data.use_average_temp_for_co2 = get_or_default<bool>(doc["co2"], "use_average_inside_temp", true);

@@ -15,7 +15,7 @@
 #include "VentilationState.hpp"
 #include "WiFiReconnect.hpp"
 
-#define COORDINATOR_VERSION "2.6"
+#define COORDINATOR_VERSION "2.7"
 
 AsyncWebServer server(80);
 

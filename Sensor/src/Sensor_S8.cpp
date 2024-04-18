@@ -5,7 +5,7 @@
 #include <s8_uart.h>
 
 Sensor_S8::Sensor_S8(int hardware_serial_nr, SENSOR_LOCATION location):
-	Sensor_Interface{}, ss{ hardware_serial_nr }, uart{nullptr}, data{},
+	Sensor_Interface{}, ss{ (uint8_t)hardware_serial_nr }, uart{nullptr}, data{},
 	found{false}, last_measurement_time{ 0 }, new_measurement_available{ false }, 
     manual_calibration_failure {false}, calibration_status{ CALIBRATION_STATUS::UNKNOWN },
     abc_status{ ABC_STATUS::UNKNOWN }, perform_manual_calibration_time{ 0 }, location{ location }
