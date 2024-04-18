@@ -9,7 +9,11 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
+const int CO2_STATES_COUNT = 9;
+const int CO2_MATRIX_SIDE_LENGTH = 21;
+
 struct global_config {
+
     String get_wifi_ssid() const;
     void set_wifi_ssid(const String& wifi_ssid);
 
@@ -39,9 +43,7 @@ struct global_config {
     String auth_user;
     String auth_password;
     int interval;
-    int co2_ppm_high;
-    int co2_ppm_medium;
-    int co2_ppm_low;
+
     float rh_high;
     float rh_medium;
     float rh_low;
@@ -63,6 +65,21 @@ struct global_config {
 
     int get_gps_baud() const;
     void set_gps_baud(int baud);
+
+    // added in v2.6
+    struct co2_ppm_state_s {
+        int high;
+        int medium;
+        int low;
+    };
+
+    co2_ppm_state_s conservative_co2_state;
+    co2_ppm_state_s aggressive_co2_state;
+    
+    float temp_setpoint_c;
+    bool use_average_temp_for_co2;
+
+    const co2_ppm_state_s get_co2_ppm_data(float measured_temp, float air_inlet_temp, float& aggressiveness_result) const;
 };
 
 // define filename to store config file

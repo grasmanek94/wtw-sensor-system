@@ -28,9 +28,16 @@ void init_wifi() {
     Serial.print(global_config_data.get_wifi_ssid());
     Serial.print("' ..");
 
+    int try_count = 0;
     while (WiFi.status() != WL_CONNECTED) {
-        Serial.print('.');
-        delay(1000);
+        if(++try_count > 30) {
+            try_count = 0;
+            Serial.println("Reconnect");
+            WiFi.reconnect();
+        } else {
+            Serial.print('.');
+            delay(1000);
+        }
     }
 
     Serial.println(WiFi.localIP());

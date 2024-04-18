@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <Arduino.h>
 
 namespace constexpr_hash
 {

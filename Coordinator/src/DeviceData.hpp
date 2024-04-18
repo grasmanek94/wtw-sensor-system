@@ -5,6 +5,8 @@
 #include "VentilationState.hpp"
 #include "RingBuf.h"
 
+#include <array>
+
 const size_t SENSORS_COUNT = (size_t)SENSOR_LOCATION::NUM_LOCATIONS;
 const size_t SENSOR_EXPECTED_INTERVAL = 15 * 1000; // 15 s
 const size_t SENSOR_VERY_SHORT_MEASUREMENT_PERIOD = 1 * 60 * 1000; // 1 min
@@ -82,7 +84,7 @@ struct device_data {
     String getHeaders() const;
 };
 
-extern device_data sensors[SENSORS_COUNT];
+extern std::array<device_data,SENSORS_COUNT> sensors;
 
 // try to keep this below ~16KiB, shall we?
 const size_t TOTAL_SENSORS_DATA_SIZE = sizeof(sensors);

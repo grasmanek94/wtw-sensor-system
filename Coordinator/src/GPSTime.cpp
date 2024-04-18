@@ -1,4 +1,6 @@
 #include "GPSTime.hpp"
+
+#if GPS_TIME_ENABLED
 #include "ESP32TimeFixed.hpp"
 #include "LittleFS.hpp"
 
@@ -91,3 +93,4 @@ void gps_time::update() {
 		Serial.println(rtc->getDateTime());
 	}
 }
+#endif

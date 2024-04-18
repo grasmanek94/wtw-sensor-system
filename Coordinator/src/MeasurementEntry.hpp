@@ -9,12 +9,15 @@
 struct measurement_entry {
 public:
     uint32_t relative_time;
+
 private:
-    uint16_t co2_ppm: 11; // 11 bits 0..2047
+    uint16_t co2_ppm: 12; // 12 bits 0..4095
     uint16_t relative_humidity: 10; // 10 bits 0..1023 (divide by 10 to get RH%) 
     int16_t temperature_c: 10; // 10 bits 0..1023 each step is 0.1 *C -51.2 to +51.2
     uint16_t attainable_humidity : 10;
     requested_ventilation_state state_at_this_time : 2;
+    uint8_t ventilation_aggressiveness : 4; // 0 to 16 [0..2]
+
 public:
 
     uint16_t sensor_status;
@@ -38,6 +41,9 @@ public:
     void set_state_at_this_time(requested_ventilation_state state);
     requested_ventilation_state get_state_at_this_time() const;
 
+    void set_ventilation_aggressiveness(int state);
+    unsigned int get_ventilation_aggressiveness() const;
+
     measurement_entry();
 };
 #pragma pack(pop)
@@ -51,4 +57,5 @@ struct measurement_entry_avg {
     float temperature_c;
     float state_at_this_time;
     float attainable_humidity;
+    float ventilation_aggressiveness;
 };

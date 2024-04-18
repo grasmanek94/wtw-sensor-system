@@ -1,15 +1,15 @@
-#include "src/constexpr_hash.hpp"
-#include "src/HTTPPages.hpp"
-#include "src/HumidityOffset.hpp"
-#include "src/LittleFS.hpp"
-#include "src/MyWifi.hpp"
+#include "constexpr_hash.hpp"
+#include "HTTPPages.hpp"
+#include "HumidityOffset.hpp"
+#include "LittleFS.hpp"
+#include "MyWifi.hpp"
 
 // Select sensors which can be configured in json here
 ///////////////////////////////////////////////////////
-#include "src/Sensor_S8.hpp"
-#include "src/Sensor_SHT4X.hpp"
-//#include "src/Sensor_MZH19.hpp"
-#include "src/Sensor_SHT31.hpp"
+#include "Sensor_S8.hpp"
+#include "Sensor_SHT4X.hpp"
+//#include "Sensor_MZH19.hpp"
+#include "Sensor_SHT31.hpp"
 ///////////////////////////////////////////////////////
 
 #include <ESPAsyncWebSrv.h>
@@ -19,7 +19,7 @@
 #include <Vector.h>
 
 #include <Wire.h>
-#define SENSOR_VERSION "2.3"
+#define SENSOR_VERSION "2.6"
 
 char* SENSOR_VERSION_STR = SENSOR_VERSION;
 String SENSORS_LIST_STR("");

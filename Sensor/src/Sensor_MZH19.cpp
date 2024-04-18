@@ -1,6 +1,6 @@
 #include "Sensor_MZH19.hpp"
 
-Sensor_MHZ19::Sensor_MHZ19(bool auto_calibration, int hardware_serial_nr, SENSOR_LOCATION location,
+Sensor_MHZ19::Sensor_MHZ19(bool auto_calibration, uint8_t hardware_serial_nr, SENSOR_LOCATION location,
 	float temp_offset_x, float temp_offset_y) :
 	Sensor_Interface{}, SensorHasTempOffset{ temp_offset_x, temp_offset_y }, 
 	auto_calibration{ auto_calibration},

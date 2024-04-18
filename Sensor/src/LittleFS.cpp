@@ -9,8 +9,7 @@
      https://github.com/lorol/arduino-esp32littlefs-plugin */
 
 global_config global_config_data;
-const size_t max_document_len = 2048;
-static StaticJsonDocument<max_document_len> doc;
+static JsonDocument doc;
 
 String global_config::get_wifi_ssid() const {
     return doc["wifi_id"].as<String>();
@@ -35,7 +34,7 @@ String global_config::get_sensors() const {
 }
 
 void global_config::set_sensors(const String& sensors) {
-    DynamicJsonDocument sensors_json(max_document_len/4);
+    JsonDocument sensors_json{};
 
     deserializeJson(sensors_json, sensors);
     doc["sensors"] = sensors_json;
@@ -84,11 +83,6 @@ static bool readConfig(const sensor_entry_callback& switcher) {
 
     int config_file_size = file_content.length();
     Serial.println("Config file size: " + String(config_file_size));
-
-    if (config_file_size > max_document_len) {
-        Serial.println("Config file too large");
-        return false;
-    }
 
     auto error = deserializeJson(doc, file_content);
     if (error) {

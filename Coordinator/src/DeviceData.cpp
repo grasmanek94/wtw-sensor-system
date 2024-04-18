@@ -8,7 +8,9 @@
 
 #include <time.h>
 
-device_data sensors[SENSORS_COUNT];
+#include <array>
+
+std::array<device_data,SENSORS_COUNT> sensors;
 
 device_data::device_data() :
     id{ "" },
@@ -21,7 +23,7 @@ device_data::device_data() :
     current_ventilation_state_rh{ requested_ventilation_state_medium },
     latest_measurement{},
     average_measurement{},
-    _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f }
+    _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }
 {}
 
 static void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg, unsigned long time_span) {
@@ -41,7 +43,8 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
     tmp_avg.attainable_humidity = 0.0f;
     tmp_avg.state_at_this_time = 0.0f;
     tmp_avg.temperature_c = 0.0f;
-    
+    tmp_avg.ventilation_aggressiveness = 0.0f;
+     
     if (size > 0) {
         // initial value better be not 0 because then it will always stay at 0
         avg.sequence_number = container->at(0).sequence_number;
@@ -53,6 +56,7 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
         tmp_avg.relative_humidity += (float)container->at(i).get_rh();
         tmp_avg.attainable_humidity += (float)container->at(i).get_attainable_rh();
         tmp_avg.temperature_c += (float)container->at(i).get_temp();
+        tmp_avg.ventilation_aggressiveness += (float)container->at(i).get_ventilation_aggressiveness();
 
         MeterStatusUnion meter_status;
         MeterStatusUnion meter_status_avg;
@@ -74,15 +78,19 @@ static void get_average(RingBufInterface<measurement_entry>* container, measurem
         avg.relative_time = min(avg.relative_time, container->at(i).relative_time);
     }
 
-    avg.set_state_at_this_time((requested_ventilation_state)(int)round(tmp_avg.state_at_this_time /= (float)size));
+    avg.set_state_at_this_time((requested_ventilation_state)(int)round(tmp_avg.state_at_this_time / (float)size));
     avg.set_co2(tmp_avg.co2_ppm / (float)size);
     avg.set_rh(tmp_avg.relative_humidity / (float)size);
     avg.set_attainable_rh(tmp_avg.attainable_humidity / (float)size);
     avg.set_temp(tmp_avg.temperature_c / (float)size);
+    avg.set_ventilation_aggressiveness(round(tmp_avg.ventilation_aggressiveness / (float)size));
 }
 
 void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, unsigned long sequence_number) {
     unsigned long now = (unsigned long)time(NULL);
+    const float ERROR_PROBABLY_TEMP_MIN = -30.0f;
+    const float ERROR_PROBABLY_TEMP_MAX = 60.0f;
+    const int DEFAULT_VENTILATION_AGGRESSIVENESS = 0;
 
     latest_measurement.relative_time = now;
     latest_measurement.set_co2(co2_ppm);
@@ -90,10 +98,51 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
     latest_measurement.set_temp(temp_c);
     latest_measurement.sensor_status = sensor_status;
     latest_measurement.sequence_number = sequence_number;
+    latest_measurement.set_ventilation_aggressiveness(DEFAULT_VENTILATION_AGGRESSIVENESS);
 
     if (loc != SENSOR_LOCATION::NEW_AIR_INLET) {
+        float average_temp_inside_for_co2 = 0.0f;
+        int average_temps_measured_for_co2 = 0;
+
+        if(global_config_data.use_average_temp_for_co2) {
+            for(const auto& sensor: sensors) {
+                if(sensor.is_associated() && sensor.has_recent_data()) {
+                    if(sensor.loc == SENSOR_LOCATION::NEW_AIR_INLET) {
+                        continue;
+                    } 
+
+                    if(sensor.latest_measurement.get_co2() != 0) {
+                        continue;
+                    }
+
+                    if(sensor.latest_measurement.get_temp() > ERROR_PROBABLY_TEMP_MAX) {
+                        continue;
+                    }
+
+                    if(sensor.latest_measurement.get_temp() < ERROR_PROBABLY_TEMP_MIN) {
+                        continue;
+                    }
+
+                    ++average_temps_measured_for_co2;
+                    average_temp_inside_for_co2 += sensor.latest_measurement.get_temp();
+                }
+            }
+        }
+
+        if(average_temps_measured_for_co2 != 0) {
+            average_temp_inside_for_co2 /= (float)average_temps_measured_for_co2;
+        } else {
+            average_temp_inside_for_co2 = temp_c;
+        }
+
         bool use_full_rh_calculation = true;
-        current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, global_config_data.co2_ppm_low, global_config_data.co2_ppm_medium, global_config_data.co2_ppm_high);
+        float measured_inlet_temp = global_config_data.temp_setpoint_c;
+        const auto& outside_sensor = sensors[(int)SENSOR_LOCATION::NEW_AIR_INLET];
+        bool has_air_inlet_data = outside_sensor.is_associated() && outside_sensor.has_recent_data();
+
+        if (has_air_inlet_data) {
+            measured_inlet_temp = outside_sensor.latest_measurement.get_temp();
+        }
 
         if (global_config_data.use_rh_headroom_mode) {
             // Here will be calculated if it is possible to attain a 'better' relative humidity inside, 
@@ -102,8 +151,8 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
             // For example, if outside if 15 *C 95% RH, and inside it's 22 *C, the best attainable RH is ~61%
             // If it's already <= 61% inside, then ventilating more won't bring it below 61%.. 
             // It's better to not waste energy in such a case
-            const auto& outside_sensor = sensors[(int)SENSOR_LOCATION::NEW_AIR_INLET];
-            if (outside_sensor.is_associated() && outside_sensor.has_recent_data()) {
+
+            if (has_air_inlet_data) {
                 const auto& outside_measurement = outside_sensor.latest_measurement;
 
                 latest_measurement.set_attainable_rh(offset_relative_humidity(outside_measurement.get_rh(), outside_measurement.get_temp(), temp_c));
@@ -124,6 +173,13 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
                 current_ventilation_state_rh = requested_ventilation_state_low;
             }
         }
+
+        float ventilation_aggressiveness = 0.0f;
+        const float convert_to_numeric_state = 16.0f / 2.0f;
+        const auto& co2_data = global_config_data.get_co2_ppm_data(average_temp_inside_for_co2, measured_inlet_temp, ventilation_aggressiveness);
+        latest_measurement.set_ventilation_aggressiveness((int)(ventilation_aggressiveness * convert_to_numeric_state));
+
+        current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, co2_data.low, co2_data.medium, co2_data.high);
 
         if (use_full_rh_calculation) {
             latest_measurement.set_attainable_rh(0.0f);

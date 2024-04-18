@@ -25,7 +25,7 @@ private:
 	const unsigned long meassurement_elapsed_millis = 4000;
 
 public:
-	Sensor_MHZ19(bool auto_calibration = false, int hardware_serial_nr = 2, 
+	Sensor_MHZ19(bool auto_calibration = false, uint8_t hardware_serial_nr = 2, 
 		SENSOR_LOCATION location = (SENSOR_LOCATION)0,
 		float temp_offset_x = 1.0f, float temp_offset_y = 0.0f);
 

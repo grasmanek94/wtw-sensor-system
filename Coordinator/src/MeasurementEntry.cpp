@@ -8,7 +8,8 @@ measurement_entry::measurement_entry() :
     attainable_humidity{ 0 },
     state_at_this_time{ requested_ventilation_state_undefined },
     sensor_status{ 0 },
-    sequence_number{ 0 }
+    sequence_number{ 0 },
+    ventilation_aggressiveness{ 0 }
 {}
 
 void measurement_entry::set_rh(float rh) {
@@ -20,7 +21,7 @@ float measurement_entry::get_rh() const {
 }
 
 void measurement_entry::set_co2(int co2) {
-    co2_ppm = (uint16_t)min(max(co2, 0), 2047);
+    co2_ppm = (uint16_t)min(max(co2, 0), 4095);
 }
 
 int measurement_entry::get_co2() const {
@@ -51,6 +52,14 @@ requested_ventilation_state measurement_entry::get_state_at_this_time() const {
     return state_at_this_time;
 }
 
+void measurement_entry::set_ventilation_aggressiveness(int state) {
+    ventilation_aggressiveness = (uint8_t)min(max(state, 0), 16);
+}
+
+unsigned int measurement_entry::get_ventilation_aggressiveness() const {
+    return ventilation_aggressiveness;
+}
+
 String measurement_entry::toString() const
 {
     return
@@ -61,7 +70,8 @@ String measurement_entry::toString() const
         + String(get_temp()) + ",\t"
         + String(sensor_status) + ",\t"
         + String(sequence_number) + ",\t"
-        + String(state_at_this_time) + "\n";
+        + String(state_at_this_time) + ",\t"
+        + String(ventilation_aggressiveness) + "\n";
 }
 
 String measurement_entry::getHeaders() const {
@@ -73,5 +83,6 @@ String measurement_entry::getHeaders() const {
         "temp_c,\t"
         "sensor_status,\t"
         "sequence_number,\t"
-        "state_at_this_time\n";
+        "state_at_this_time,\t"
+        "ventilation_aggressiveness\n";
 }

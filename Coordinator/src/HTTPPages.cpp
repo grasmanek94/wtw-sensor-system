@@ -21,7 +21,7 @@ static const char flash_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-static const char config_html_start[] PROGMEM = R"rawliteral(
+static const char config_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
@@ -30,9 +30,34 @@ static const char config_html_start[] PROGMEM = R"rawliteral(
 </head>
 <body>
     <form action="/config" method="post">
-)rawliteral";
-
-const char config_html_end[] PROGMEM = R"rawliteral(
+	  %config_set_1%
+	  %config_set_2%
+	  %config_set_3%
+	  %config_set_4%
+	  %config_set_5%
+	  %config_matrix_header%
+	  %config_matrix_table_partA%
+	  %config_matrix_table_partB%
+	  %config_matrix_table_partC%
+	  %config_matrix_table_partD%
+	  %config_matrix_table_partE%
+	  %config_matrix_table_partF%
+	  %config_matrix_table_partG%
+	  %config_matrix_table_partH%
+	  %config_matrix_table_partI%
+	  %config_matrix_table_partJ%
+	  %config_matrix_table_partK%
+	  %config_matrix_table_partL%
+	  %config_matrix_table_partM%
+	  %config_matrix_table_partN%
+	  %config_matrix_table_partO%
+	  %config_matrix_table_partP%
+	  %config_matrix_table_partQ%
+	  %config_matrix_table_partR%
+	  %config_matrix_table_partS%
+	  %config_matrix_table_partT%
+	  %config_matrix_table_partU%
+	  %config_matrix_footer%
       <input type="submit" value="Save + Reset ESP32">
     </form>
 </body>
@@ -186,7 +211,6 @@ void http_page_devices(AsyncWebServerRequest* request) {
 	}
 
 	for (int i = 0; i < SENSORS_COUNT; ++i) {
-		auto& sensor = sensors[i];
 		devices += sensors[i].toString(i);
 	}
 
@@ -404,50 +428,90 @@ static String add_form_label(String id, String name, String value) {
 		"<input type=\"text\" id=\"" + id + "\" name=\"" + id + "\" value=\"" + html_encode(value) + "\"><br>\n";
 }
 
-void http_page_config(AsyncWebServerRequest* request) {
-	if (!check_auth(request)) {
-		return request->requestAuthentication();
-	}
-
-	String html(config_html_start);
+String config_html_processor(const String& var)
+{
 
 #define ADD_OPTION(name, description)  html += add_form_label(#name, description, String(global_config_data. name))
 #define ADD_OPTION_FUNC(name, description)  html += add_form_label(#name, description, String(global_config_data.get_##name()))
+#define ADD_OPTION_CO2(idx, name, state)  html += add_form_label("co2_ppm_" #name #idx, "co2_ppm_" #name " (State " #state ")", String(global_config_data. idx. name))
+#define ADD_OPTION_FULL_CO2(idx, state) \
+	ADD_OPTION_CO2(idx, low, state); \
+	ADD_OPTION_CO2(idx, medium, state); \
+	ADD_OPTION_CO2(idx, high, state)
 
-	ADD_OPTION_FUNC(wifi_ssid, "WiFi SSID");
-	ADD_OPTION_FUNC(wifi_password, "WiFi Password");
-	ADD_OPTION_FUNC(device_custom_hostname, "Custom Hostname");
-	ADD_OPTION(destination_address, "Destination Address");
-	ADD_OPTION(auth_user, "API User");
-	ADD_OPTION(auth_password, "API Password");
-	ADD_OPTION(interval, "Update Interval (s)");
-	ADD_OPTION(co2_ppm_high, "co2_ppm_high");
-	ADD_OPTION(co2_ppm_medium, "co2_ppm_medium");
-	ADD_OPTION(co2_ppm_low, "co2_ppm_low");
-	ADD_OPTION(rh_high, "rh_high");
-	ADD_OPTION(rh_medium, "rh_medium");
-	ADD_OPTION(rh_low, "rh_low");
-	ADD_OPTION_FUNC(static_ip, "Static IP Address");
-	ADD_OPTION_FUNC(gateway_ip, "Gateway IP Address");
-	ADD_OPTION_FUNC(subnet, "Subnet Mask");
-	ADD_OPTION_FUNC(primary_dns, "Primary DNS IP Address");
-	ADD_OPTION_FUNC(secondary_dns, "Secondary DNS IP Address");
-	ADD_OPTION(use_rh_headroom_mode, "Use relative humidity headroom calculations to try to save power, requires presence of outside/inlet temp & RH sensor (mapped to location SENSOR_LOCATION::NEW_AIR_INLET)");
-	ADD_OPTION(rh_attainable_headroom_high, "(Current RH - Possible RH) : HIGH");
-	ADD_OPTION(rh_attainable_headroom_medium, "(Current RH - Possible RH) : MEDIUM");
-	ADD_OPTION(rh_attainable_headroom_low, "(Current RH - Possible RH) : LOW");
-	ADD_OPTION(rh_headroom_mode_rh_medium_bound, "When ventilation state is HIGH but RH is below medium bound, force MEDIUM RH ventilationstate");
-	ADD_OPTION(rh_headroom_mode_rh_low_bound, "When ventilation state is MEDIUM but RH is below low bound, force LOW RH ventilation state");
-	ADD_OPTION(use_gps_time, "Use GPS time");
-	ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
-	ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
+	String html{};
+	if(var == "config_set_1") {
+		ADD_OPTION_FUNC(wifi_ssid, "WiFi SSID");
+		ADD_OPTION_FUNC(wifi_password, "WiFi Password");
+		ADD_OPTION_FUNC(device_custom_hostname, "Custom Hostname");
+		ADD_OPTION(destination_address, "Destination Address");
+		ADD_OPTION(auth_user, "API User");
+		ADD_OPTION(auth_password, "API Password");
+		ADD_OPTION(interval, "Update Interval (s)");
+	}
+	else if(var == "config_set_2") {
+		ADD_OPTION(rh_high, "rh_high");
+		ADD_OPTION(rh_medium, "rh_medium");
+		ADD_OPTION(rh_low, "rh_low");
+		ADD_OPTION_FUNC(static_ip, "Static IP Address");
+		ADD_OPTION_FUNC(gateway_ip, "Gateway IP Address");
+		ADD_OPTION_FUNC(subnet, "Subnet Mask");
+		ADD_OPTION_FUNC(primary_dns, "Primary DNS IP Address");
+		ADD_OPTION_FUNC(secondary_dns, "Secondary DNS IP Address");	
+	}
+	else if(var == "config_set_3") {
+		ADD_OPTION(use_rh_headroom_mode, "Use relative humidity headroom calculations to try to save power, requires presence of outside/inlet temp & RH sensor (mapped to location SENSOR_LOCATION::NEW_AIR_INLET)");
+		ADD_OPTION(rh_attainable_headroom_high, "(Current RH - Possible RH) : HIGH");
+		ADD_OPTION(rh_attainable_headroom_medium, "(Current RH - Possible RH) : MEDIUM");
+		ADD_OPTION(rh_attainable_headroom_low, "(Current RH - Possible RH) : LOW");
+	}
+	else if(var == "config_set_4") {
+		ADD_OPTION(rh_headroom_mode_rh_medium_bound, "When ventilation state is HIGH but RH is below medium bound, force MEDIUM RH ventilationstate");
+		ADD_OPTION(rh_headroom_mode_rh_low_bound, "When ventilation state is MEDIUM but RH is below low bound, force LOW RH ventilation state");
+		ADD_OPTION(use_gps_time, "Use GPS time");
+		ADD_OPTION_FUNC(gps_time_uart_nr, "GPS time UART nr");
+		ADD_OPTION_FUNC(gps_baud, "GPS baud rate");
+		ADD_OPTION(use_average_temp_for_co2, "Use average temperature for CO2 matrix, instead of per-sensor temperature");
+	}
+	else if(var == "config_set_5") {
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(aggressive_co2_state, "Aggressive");
+		html += "<br>";
+		ADD_OPTION_FULL_CO2(conservative_co2_state, "Conservative");
+		html += "<br>";
+	}
+	else if(var == "config_matrix_header") {
+		// empty on purpose
+	}
+	else if(var.startsWith("config_matrix_table_part")) {
+		int matrix_y = (int)(var[strlen("config_matrix_table_part")] - 'A');
+		if(matrix_y < 0 || matrix_y >= CO2_MATRIX_SIDE_LENGTH) {
+			return html;
+		}
+		// empty on purpose
+	}
+	else if(var == "config_matrix_footer") {
+		// empty on purpose
+	}
 
+#undef ADD_OPTION_FULL_CO2
+#undef ADD_OPTION_CO2
 #undef ADD_OPTION_FUNC
 #undef ADD_OPTION
 
-	html += config_html_end;
-	request->send(200, "text/html", html);
+	return html;
 }
+
+void http_page_config(AsyncWebServerRequest* request) {
+	if (!check_auth(request)) {
+		return request->requestAuthentication();
+	}	
+
+	AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", config_html, config_html_processor);
+	request->send(response);
+}
+
+bool perform_deferred_reset = false;
 
 void http_api_config(AsyncWebServerRequest* request) {
 	if (!check_auth(request)) {
@@ -468,6 +532,28 @@ void http_api_config(AsyncWebServerRequest* request) {
     global_config_data.set_##name(param->value() conversion); \
     Serial.println(global_config_data.get_##name())
 
+#define PARSE_ENTRY_CO2_STATE(idx, name) param = request->getParam("co2_ppm_" #name #idx, true); \
+    if (!param) { \
+        return request->send(HTTP_BAD_REQUEST, "text/html", "!" "co2_ppm_" #name #idx); \
+    } \
+    global_config_data. idx . name = param->value().toInt(); \
+    Serial.println(global_config_data. idx . name)
+
+#define PARSE_ENTRY_CO2_MATRIX(x, y) param = request->getParam(String(y) + "-" + String(x), true); \
+    if (!param) { \
+        return request->send(HTTP_BAD_REQUEST, "text/html", "!" + String(y) + "-" + String(x)); \
+    } \
+	Serial.print(y);\
+	Serial.print('-');\
+	Serial.println(x);\
+    global_config_data.co2_matrix[y][x] = param->value().toInt(); \
+    Serial.println(global_config_data.co2_matrix[y][x])
+
+#define PARSE_ENTRY_CO2_STATE_SET(idx) \
+	PARSE_ENTRY_CO2_STATE(idx, low); \
+	PARSE_ENTRY_CO2_STATE(idx, medium); \
+	PARSE_ENTRY_CO2_STATE(idx, high)
+
 #define PARSE_ENTRY_STR_FUNC(name) PARSE_ENTRY_FUNC(name, )
 #define PARSE_ENTRY_INT_FUNC(name) PARSE_ENTRY_FUNC(name, .toInt())
 #define PARSE_ENTRY_STR(name) PARSE_ENTRY(name, )
@@ -477,32 +563,43 @@ void http_api_config(AsyncWebServerRequest* request) {
 	AsyncWebParameter* param = nullptr;
 	PARSE_ENTRY_STR_FUNC(wifi_ssid);
 	PARSE_ENTRY_STR_FUNC(wifi_password);
+
 	PARSE_ENTRY_STR_FUNC(device_custom_hostname);
+
 	PARSE_ENTRY_STR(destination_address);
 	PARSE_ENTRY_STR(auth_user);
 	PARSE_ENTRY_STR(auth_password);
+
 	PARSE_ENTRY_INT(interval);
-	PARSE_ENTRY_INT(co2_ppm_high);
-	PARSE_ENTRY_INT(co2_ppm_medium);
-	PARSE_ENTRY_INT(co2_ppm_low);
+
 	PARSE_ENTRY_FLOAT(rh_high);
 	PARSE_ENTRY_FLOAT(rh_medium);
 	PARSE_ENTRY_FLOAT(rh_low);
+
 	PARSE_ENTRY_STR_FUNC(static_ip);
 	PARSE_ENTRY_STR_FUNC(gateway_ip);
 	PARSE_ENTRY_STR_FUNC(subnet);
 	PARSE_ENTRY_STR_FUNC(primary_dns);
 	PARSE_ENTRY_STR_FUNC(secondary_dns);
+
 	PARSE_ENTRY_INT(use_rh_headroom_mode);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_high);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_medium);
 	PARSE_ENTRY_FLOAT(rh_attainable_headroom_low);
 	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_medium_bound);
 	PARSE_ENTRY_FLOAT(rh_headroom_mode_rh_low_bound);
+
 	PARSE_ENTRY_INT(use_gps_time);
 	PARSE_ENTRY_INT_FUNC(gps_time_uart_nr);
 	PARSE_ENTRY_INT_FUNC(gps_baud);
+	PARSE_ENTRY_INT(use_average_temp_for_co2);
 
+	PARSE_ENTRY_CO2_STATE_SET(aggressive_co2_state);
+	PARSE_ENTRY_CO2_STATE_SET(conservative_co2_state);
+
+#undef PARSE_ENTRY_CO2_MATRIX
+#undef PARSE_ENTRY_CO2_STATE
+#undef PARSE_ENTRY_CO2_STATE_SET
 #undef PARSE_ENTRY_FLOAT
 #undef PARSE_ENTRY_INT
 #undef PARSE_ENTRY_STR
@@ -512,11 +609,25 @@ void http_api_config(AsyncWebServerRequest* request) {
 #undef PARSE_ENTRY
 
 	littlefs_write_config();
+	LittleFS.end();
+	
+	Serial.print(F("Free heap: "));
+    Serial.println(String(ESP.getFreeHeap()));
+
 	if (!littlefs_read_config()) {
-		return request->send(HTTP_BAD_REQUEST, "text/html");
+		request->send(HTTP_BAD_REQUEST, "text/html");
+	} else {
+		request->send(HTTP_OK, "text/html");
 	}
 
-	request->send(HTTP_OK, "text/html");
+	perform_deferred_reset = true;
+}
 
-	ESP.restart();
+void check_http_pages_deferred_reset() {
+	if(perform_deferred_reset) {
+		perform_deferred_reset = false;
+		delay(10000);
+		LittleFS.end();
+		ESP.restart();
+	}
 }
