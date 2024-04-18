@@ -11,30 +11,6 @@
 global_config global_config_data;
 static JsonDocument doc;
 
-static const int CO2_MATRIX_DEFAULT[CO2_MATRIX_SIDE_LENGTH][CO2_MATRIX_SIDE_LENGTH] PROGMEM = {
-    {-4,-4,-4,-3,-2,-1, 0, 1, 1, 2, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3}, 
-    {-4,-4,-4,-3,-2,-1, 0, 0, 1, 2, 2, 3, 4, 4, 3, 3, 3, 2, 2, 2, 2}, 
-    {-4,-4,-4,-3,-2,-1,-1, 0, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 1, 1, 1}, 
-    {-4,-4,-4,-3,-2,-2,-1, 0, 0, 1, 2, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1}, 
-    {-4,-4,-4,-3,-3,-2,-1,-1, 0, 1, 2, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1}, 
-    {-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1}, 
-    {-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0}, 
-    {-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 2, 1, 0, 0, 0, 0,-1,-1,-1,-1}, 
-    {-4,-4,-4,-4,-3,-3,-2,-1, 0, 1, 2, 1, 1, 0,-1,-1,-1,-1,-2,-2,-2}, 
-    {-4,-4,-4,-4,-3,-2,-2,-1, 0, 1, 2, 1, 0, 0,-1,-2,-2,-2,-2,-3,-3}, 
-    {-3,-3,-3,-3,-3,-2,-1,-1, 0, 1, 2, 1, 0,-1,-1,-2,-2,-3,-3,-3,-3}, 
-    {-3,-3,-2,-2,-2,-2,-1, 0, 0, 1, 2, 1, 0,-1,-2,-2,-3,-3,-4,-4,-4}, 
-    {-2,-2,-2,-1,-1,-1,-1, 0, 1, 1, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4}, 
-    {-1,-1,-1,-1, 0, 0, 0, 0, 1, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4}, 
-    { 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-3,-3,-4,-4,-4,-4}, 
-    { 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 0,-1,-2,-2,-3,-4,-4,-4,-4}, 
-    { 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 2, 1, 0,-1,-1,-2,-3,-3,-4,-4,-4}, 
-    { 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 2, 1, 0, 0,-1,-2,-2,-3,-4,-4,-4}, 
-    { 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 2, 1, 1, 0, 1,-1,-2,-3,-4,-4,-4}, 
-    { 2, 2, 2, 2, 3, 3, 3, 4, 4, 3, 2, 2, 1, 0, 0,-1,-2,-3,-4,-4,-4}, 
-    { 3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0,-1,-2,-3,-4,-4,-4} 
-};
-
 template<typename T>
 static T get_or_default(const JsonVariant& json, const char* key, T default_value) {
 	if (json.containsKey(key)) {
@@ -124,24 +100,53 @@ void global_config::set_gps_baud(int baud) {
 	doc["gps_baud"] = baud;
 }
 
-const global_config::co2_ppm_state_s& global_config::get_co2_ppm_data(float measured_temp, float air_inlet_temp, int& co2_state_matrix_entry) const {
-	const int half_range = (CO2_MATRIX_SIDE_LENGTH - 1) / 2;
-	const int half_state = (CO2_STATES_COUNT - 1) / 2;
+template <typename T> float sign_nonzero(T val) {
+	return (T)(T(0) <= val) - (T)(val < T(0)); // change <= to < to return [-1,0,1], now it returns [-1, 1] (on purpose!)
+}
 
-	// adjust [-10,10] to [0,20]
-	int inlet_set_diff = min(max((int)round(air_inlet_temp - temp_setpoint_c), -half_range), half_range) + half_range;
-	int meas_set_diff = min(max((int)round(measured_temp - temp_setpoint_c), -half_range), half_range) + half_range;
+float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
-	// adjust [-4,4] to [0, 8]
-	int wanted_state = co2_matrix[inlet_set_diff][meas_set_diff] + half_state;
-	if(wanted_state >= 0 && wanted_state < CO2_STATES_COUNT) {
-		co2_state_matrix_entry = wanted_state;
-		return co2_states[wanted_state];
-	}
+const global_config::co2_ppm_state_s global_config::get_co2_ppm_data(float measured_temp, float air_inlet_temp, float& aggressiveness_result) const {
+	const float base_aggressiveness = 1.0f;
+	//const float local_temp_range = 30.0f;
+	const float local_temp_range = 0.03333f;
+	const float inlet_skew_factor = -4.0f;
+	const float setpoint_skew_factor = 2.0f;
+	const float aggressiveness_min = 0.0f;
+	const float aggressiveness_max = 2.0f;
 
-	// fallback to middle state
-	co2_state_matrix_entry = half_state;
-	return co2_states[half_state];
+	//const float inlet_room_factor = (inlet_temp - room_temp) / local_temp_range;
+	//const float inlet_setpoint_factor = (inlet_temp - setpoint_temp_c) / local_temp_range;
+	//const float setpoint_room_factor = (room_temp - setpoint_temp_c) / local_temp_range;
+
+	const float inlet_room_factor = (air_inlet_temp - measured_temp) * local_temp_range;
+	const float inlet_setpoint_factor = (air_inlet_temp - temp_setpoint_c) * local_temp_range;
+	const float setpoint_room_factor = (measured_temp - temp_setpoint_c) * local_temp_range;
+	const float inlet_factor = inlet_room_factor + inlet_setpoint_factor;
+
+	const float room_heating_direction = sign_nonzero(setpoint_room_factor);
+
+	const bool cooling_skew = ((measured_temp >= temp_setpoint_c) && (air_inlet_temp < temp_setpoint_c));
+	const bool heating_skew = ((measured_temp < temp_setpoint_c) && (air_inlet_temp >= temp_setpoint_c));
+	const float skewed_distance_correction = (float)(cooling_skew | heating_skew);
+
+	const float combined_skewed_distance_factor = inlet_skew_factor * inlet_setpoint_factor * room_heating_direction;
+	const float total_skewed_distance_factor = (setpoint_skew_factor + combined_skewed_distance_factor) * setpoint_room_factor * skewed_distance_correction;
+
+	const float skewed_heat_direction = sign_nonzero(-1.0f * skewed_distance_correction);
+
+	const float result = std::min(std::max(base_aggressiveness - (inlet_factor + total_skewed_distance_factor) * room_heating_direction * skewed_heat_direction, aggressiveness_min), aggressiveness_max);
+	aggressiveness_result = result;
+
+	global_config::co2_ppm_state_s state{
+		(int)mapf(result, aggressiveness_min, aggressiveness_max, conservative_co2_state.high, aggressive_co2_state.high),
+		(int)mapf(result, aggressiveness_min, aggressiveness_max, conservative_co2_state.medium, aggressive_co2_state.medium),
+		(int)mapf(result, aggressiveness_min, aggressiveness_max, conservative_co2_state.low, aggressive_co2_state.low)		
+	};
+
+	return state;
 }
 
 static bool writeFile(String filename, String message) {
@@ -237,37 +242,24 @@ static bool readConfig() {
 	global_config_data.use_gps_time = get_or_default(doc, "use_gps_time", false);
 
 	// added in v2.6
-	for(int x = 0; x < CO2_MATRIX_SIDE_LENGTH; ++x) {
-		for(int y = 0; y < CO2_MATRIX_SIDE_LENGTH; ++y) {
-		global_config_data.co2_matrix[y][x] = pgm_read_byte((&CO2_MATRIX_DEFAULT[y][x]));
-	 }
-	}
-
 	if(doc.containsKey("co2")) {
-		for (int i = 0; i < CO2_STATES_COUNT; ++i) {
-			const auto& co2_state_data = doc["co2"]["temp_wanted_factor"][i];
-			global_config_data.co2_states[i].low = co2_state_data["low"].as<int>();
-			global_config_data.co2_states[i].medium = co2_state_data["medium"].as<int>();
-			global_config_data.co2_states[i].high = co2_state_data["high"].as<int>();
-		}
-
 		global_config_data.temp_setpoint_c = get_or_default<float>(doc["co2"], "temp_setpoint_c", 20.0f);
-
-		if(doc["co2"].containsKey("matrix")) {
-			ArduinoJson::copyArray(doc["co2"]["matrix"], global_config_data.co2_matrix);
-		}
-
 		global_config_data.use_average_temp_for_co2 = get_or_default<bool>(doc["co2"], "use_average_inside_temp", true);
+		global_config_data.conservative_co2_state.low = get_or_default<float>(doc["co2"], "conservative_low", 1500);
+		global_config_data.conservative_co2_state.medium = get_or_default<float>(doc["co2"], "conservative_medium", 2000);
+		global_config_data.conservative_co2_state.high = get_or_default<float>(doc["co2"], "conservative_high", 2500);
+		global_config_data.aggressive_co2_state.low = get_or_default<float>(doc["co2"], "aggressive_low", 400);
+		global_config_data.aggressive_co2_state.medium = get_or_default<float>(doc["co2"], "aggressive_medium", 700);
+		global_config_data.aggressive_co2_state.high = get_or_default<float>(doc["co2"], "aggressive_high", 1000);
 	} else {
-		for (int i = 0; i < CO2_STATES_COUNT; ++i) {
-			global_config_data.co2_states[i].low = 1600 - (130 * i);
-			global_config_data.co2_states[i].medium = 2000 - (150 * i);
-			global_config_data.co2_states[i].high = 2500 - (180 * i);
-		}
-
 		global_config_data.temp_setpoint_c = 20.0f;
-
 		global_config_data.use_average_temp_for_co2 = true;	
+		global_config_data.conservative_co2_state.low = 1500;
+		global_config_data.conservative_co2_state.medium = 2000;
+		global_config_data.conservative_co2_state.high = 2500;
+		global_config_data.aggressive_co2_state.low = 400;
+		global_config_data.aggressive_co2_state.medium = 700;
+		global_config_data.aggressive_co2_state.high = 1000;
 	}
 
 	return true;
@@ -291,16 +283,13 @@ static bool saveConfig() {
 	doc["use_gps_time"] = global_config_data.use_gps_time;
 	doc["co2"]["temp_setpoint_c"] = global_config_data.temp_setpoint_c;
 	doc["co2"]["use_average_inside_temp"] = global_config_data.use_average_temp_for_co2;
+	doc["co2"]["conservative_low"] = global_config_data.conservative_co2_state.low;
+	doc["co2"]["conservative_medium"] = global_config_data.conservative_co2_state.medium;
+	doc["co2"]["conservative_high"] = global_config_data.conservative_co2_state.high;
+	doc["co2"]["aggressive_low"] = global_config_data.aggressive_co2_state.low;
+	doc["co2"]["aggressive_medium"] = global_config_data.aggressive_co2_state.medium;
+	doc["co2"]["aggressive_high"] = global_config_data.aggressive_co2_state.high;
 		
-	for (int i = 0; i < CO2_STATES_COUNT; ++i) {
-		doc["co2"]["temp_wanted_factor"][i]["low"] = global_config_data.co2_states[i].low;
-		doc["co2"]["temp_wanted_factor"][i]["medium"] = global_config_data.co2_states[i].medium;
-		doc["co2"]["temp_wanted_factor"][i]["high"] = global_config_data.co2_states[i].high;
-	}
-
-	doc["co2"].remove("matrix");
-	ArduinoJson::copyArray(global_config_data.co2_matrix, doc["co2"]["matrix"]);
-
 	File file = LittleFS.open(global_config_filename, "w");
 	if (!file) {
 		Serial.println("writeFile -> failed to open file for writing");

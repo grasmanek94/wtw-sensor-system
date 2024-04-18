@@ -9,7 +9,7 @@ measurement_entry::measurement_entry() :
     state_at_this_time{ requested_ventilation_state_undefined },
     sensor_status{ 0 },
     sequence_number{ 0 },
-    co2_matrix_state{ 0 }
+    ventilation_aggressiveness{ 0 }
 {}
 
 void measurement_entry::set_rh(float rh) {
@@ -52,12 +52,12 @@ requested_ventilation_state measurement_entry::get_state_at_this_time() const {
     return state_at_this_time;
 }
 
-void measurement_entry::set_co2_matrix_state(int state) {
-    co2_matrix_state = (uint8_t)min(max(state, 0), 9);
+void measurement_entry::set_ventilation_aggressiveness(int state) {
+    ventilation_aggressiveness = (uint8_t)min(max(state, 0), 16);
 }
 
-unsigned int measurement_entry::get_co2_matrix_state() const {
-    return co2_matrix_state;
+unsigned int measurement_entry::get_ventilation_aggressiveness() const {
+    return ventilation_aggressiveness;
 }
 
 String measurement_entry::toString() const
@@ -71,7 +71,7 @@ String measurement_entry::toString() const
         + String(sensor_status) + ",\t"
         + String(sequence_number) + ",\t"
         + String(state_at_this_time) + ",\t"
-        + String(co2_matrix_state) + "\n";
+        + String(ventilation_aggressiveness) + "\n";
 }
 
 String measurement_entry::getHeaders() const {
@@ -84,5 +84,5 @@ String measurement_entry::getHeaders() const {
         "sensor_status,\t"
         "sequence_number,\t"
         "state_at_this_time,\t"
-        "co2_matrix_state\n";
+        "ventilation_aggressiveness\n";
 }

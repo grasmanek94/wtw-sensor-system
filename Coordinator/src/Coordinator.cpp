@@ -121,8 +121,6 @@ void setup() {
         }
     }
 
-    global_config_data.current_selected_co2_state = (CO2_STATES_COUNT / 2) + 1;
-
     setup_static_ip();
     init_wifi();
 #if GPS_TIME_ENABLED

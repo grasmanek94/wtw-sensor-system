@@ -16,7 +16,7 @@ private:
     int16_t temperature_c: 10; // 10 bits 0..1023 each step is 0.1 *C -51.2 to +51.2
     uint16_t attainable_humidity : 10;
     requested_ventilation_state state_at_this_time : 2;
-    uint8_t co2_matrix_state : 4; // 0 to 9
+    uint8_t ventilation_aggressiveness : 4; // 0 to 16 [0..2]
 
 public:
 
@@ -41,8 +41,8 @@ public:
     void set_state_at_this_time(requested_ventilation_state state);
     requested_ventilation_state get_state_at_this_time() const;
 
-    void set_co2_matrix_state(int state);
-    unsigned int get_co2_matrix_state() const;
+    void set_ventilation_aggressiveness(int state);
+    unsigned int get_ventilation_aggressiveness() const;
 
     measurement_entry();
 };
@@ -57,5 +57,5 @@ struct measurement_entry_avg {
     float temperature_c;
     float state_at_this_time;
     float attainable_humidity;
-    float co2_matrix_state;
+    float ventilation_aggressiveness;
 };

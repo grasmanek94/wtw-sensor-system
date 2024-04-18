@@ -27,18 +27,6 @@ static const char config_html[] PROGMEM = R"rawliteral(
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">
-  <style>
-	table:not(.js) [value^="-4"] {background-color: rgb(209, 54 , 0  );}
-	table:not(.js) [value^="-3"] {background-color: rgb(255, 92 , 38 );}
-	table:not(.js) [value^="-2"] {background-color: rgb(255, 125, 82 );}
-	table:not(.js) [value^="-1"] {background-color: rgb(160, 160, 160);}
-	table:not(.js) [value^="0"]  {background-color: rgb(200, 200, 200);}
-	table:not(.js) [value^="1"]  {background-color: rgb(190, 238, 250);}
-	table:not(.js) [value^="2"]  {background-color: rgb(119, 226, 252);}
-	table:not(.js) [value^="3"]  {background-color: rgb(43 , 252, 155);}
-	table:not(.js) [value^="4"]  {background-color: rgb(4  , 181, 98 );}
-	table:not(.js) input:focus   {background-color: rgb(255, 255, 255);}
-  </style> 
 </head>
 <body>
     <form action="/config" method="post">
@@ -445,7 +433,7 @@ String config_html_processor(const String& var)
 
 #define ADD_OPTION(name, description)  html += add_form_label(#name, description, String(global_config_data. name))
 #define ADD_OPTION_FUNC(name, description)  html += add_form_label(#name, description, String(global_config_data.get_##name()))
-#define ADD_OPTION_CO2(idx, name, state)  html += add_form_label("co2_ppm_" #name #idx, "co2_ppm_" #name " (State " #state ")", String(global_config_data.co2_states[idx]. name))
+#define ADD_OPTION_CO2(idx, name, state)  html += add_form_label("co2_ppm_" #name #idx, "co2_ppm_" #name " (State " #state ")", String(global_config_data. idx. name))
 #define ADD_OPTION_FULL_CO2(idx, state) \
 	ADD_OPTION_CO2(idx, low, state); \
 	ADD_OPTION_CO2(idx, medium, state); \
@@ -487,59 +475,23 @@ String config_html_processor(const String& var)
 	}
 	else if(var == "config_set_5") {
 		html += "<br>";
-		ADD_OPTION_FULL_CO2(0, "-4");
+		ADD_OPTION_FULL_CO2(aggressive_co2_state, "Aggressive");
 		html += "<br>";
-		ADD_OPTION_FULL_CO2(1, "-3");
-		html += "<br>";
-		ADD_OPTION_FULL_CO2(2, "-2");
-		html += "<br>";
-		ADD_OPTION_FULL_CO2(3, "-1");
-		html += "<br>";
-		ADD_OPTION_FULL_CO2(4, "0");
-		html += "<br>";
-		ADD_OPTION_FULL_CO2(5, "1");
-		html += "<br>";
-		ADD_OPTION_FULL_CO2(6, "2");
-		html += "<br>";
-		ADD_OPTION_FULL_CO2(7, "3");
-		html += "<br>";
-		ADD_OPTION_FULL_CO2(8, "4");
+		ADD_OPTION_FULL_CO2(conservative_co2_state, "Conservative");
 		html += "<br>";
 	}
 	else if(var == "config_matrix_header") {
-		html += "\
-		<br>\
-		<table border=\"1\">\
-		<tr>\
-		<th>Measured-Setpoint</th>";
-
-		const int half_side = (CO2_MATRIX_SIDE_LENGTH - 1) / 2;
-		for(int i = -half_side; i <= half_side; ++i) {
-			html += "<th>" + String(i) + "</th>";
-		}
-
-		html += "\
-		</tr>\
-		<tr>\
-		<th>Inlet-Setpoint</th>\
-		</tr>";
+		// empty on purpose
 	}
 	else if(var.startsWith("config_matrix_table_part")) {
 		int matrix_y = (int)(var[strlen("config_matrix_table_part")] - 'A');
 		if(matrix_y < 0 || matrix_y >= CO2_MATRIX_SIDE_LENGTH) {
 			return html;
 		}
-
-		html += "<tr><th>" + String(-10 + matrix_y) + "</th>";
-		for(int matrix_x = 0; matrix_x < CO2_MATRIX_SIDE_LENGTH; ++matrix_x) {
-			String id_name = String(matrix_y) + "-" + (matrix_x);
-
-			html += "<td><input type=\"number\" value=\"" + String(global_config_data.co2_matrix[matrix_y][matrix_x]) + "\" min=\"-4\" max=\"4\" id=\"" + id_name + "\" name=\"" + id_name + "\"></td>";				
-		}		
-		html += "</tr>";	
+		// empty on purpose
 	}
 	else if(var == "config_matrix_footer") {
-		html += "</table><br>";
+		// empty on purpose
 	}
 
 #undef ADD_OPTION_FULL_CO2
@@ -584,8 +536,8 @@ void http_api_config(AsyncWebServerRequest* request) {
     if (!param) { \
         return request->send(HTTP_BAD_REQUEST, "text/html", "!" "co2_ppm_" #name #idx); \
     } \
-    global_config_data.co2_states[idx]. name = param->value().toInt(); \
-    Serial.println(global_config_data.co2_states[idx]. name)
+    global_config_data. idx . name = param->value().toInt(); \
+    Serial.println(global_config_data. idx . name)
 
 #define PARSE_ENTRY_CO2_MATRIX(x, y) param = request->getParam(String(y) + "-" + String(x), true); \
     if (!param) { \
@@ -642,21 +594,8 @@ void http_api_config(AsyncWebServerRequest* request) {
 	PARSE_ENTRY_INT_FUNC(gps_baud);
 	PARSE_ENTRY_INT(use_average_temp_for_co2);
 
-	PARSE_ENTRY_CO2_STATE_SET(0);
-	PARSE_ENTRY_CO2_STATE_SET(1);
-	PARSE_ENTRY_CO2_STATE_SET(2);
-	PARSE_ENTRY_CO2_STATE_SET(3);
-	PARSE_ENTRY_CO2_STATE_SET(4);
-	PARSE_ENTRY_CO2_STATE_SET(5);
-	PARSE_ENTRY_CO2_STATE_SET(6);
-	PARSE_ENTRY_CO2_STATE_SET(7);
-	PARSE_ENTRY_CO2_STATE_SET(8);
-
-	for(int y = 0; y < CO2_MATRIX_SIDE_LENGTH; ++y) {
-		for(int x = 0; x < CO2_MATRIX_SIDE_LENGTH; ++x) {
-			PARSE_ENTRY_CO2_MATRIX(x, y);
-		}
-	}
+	PARSE_ENTRY_CO2_STATE_SET(aggressive_co2_state);
+	PARSE_ENTRY_CO2_STATE_SET(conservative_co2_state);
 
 #undef PARSE_ENTRY_CO2_MATRIX
 #undef PARSE_ENTRY_CO2_STATE
