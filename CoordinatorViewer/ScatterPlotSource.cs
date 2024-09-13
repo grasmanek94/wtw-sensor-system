@@ -1,6 +1,7 @@
 ﻿using ScottPlot.Plottables;
 using ScottPlot.WinForms;
 using ScottPlot.DataSources;
+using ScottPlot;
 
 namespace CoordinatorViewer
 {
@@ -14,15 +15,15 @@ namespace CoordinatorViewer
             this.forms_plot = forms_plot;
 
             scatter_plot = forms_plot.Plot.Add.Scatter(source);
-            scatter_plot.Label = label;
-            var x = forms_plot.Plot.Legends[0];
+            scatter_plot.LegendText = label;
+            var x = forms_plot.Plot.Legend;
         }
 
         public void Dispose()
         {
-            if (forms_plot.Plot.Plottables.Contains(scatter_plot))
+            if (forms_plot.Plot.PlottableList.Contains(scatter_plot))
             {
-                forms_plot.Plot.Plottables.Remove(scatter_plot);
+                forms_plot.Plot.PlottableList.Remove(scatter_plot);
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using ScottPlot.DataSources;
+﻿using ScottPlot;
+using ScottPlot.DataSources;
 using ScottPlot.WinForms;
 
 namespace CoordinatorViewer
@@ -54,11 +55,10 @@ namespace CoordinatorViewer
 
         public void Fit()
         {
-            forms_plot.Plot.AutoScale(true);
-
-            forms_plot.Plot.YAxis.Min = y_min;
-            forms_plot.Plot.YAxis.Max = y_max;
-            forms_plot.Plot.XAxis.Max = 1;
+            forms_plot.Plot.Axes.AutoScale();// AutoScale(true);
+            forms_plot.Plot.Axes.GetAxes().ElementAt(1).Min = y_min;
+            forms_plot.Plot.Axes.GetAxes().ElementAt(1).Max = y_max;
+            forms_plot.Plot.Axes.GetAxes().ElementAt(0).Max = 1;
         }
 
         public void Dispose()

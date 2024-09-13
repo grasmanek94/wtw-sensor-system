@@ -84,10 +84,8 @@ namespace CoordinatorViewer
         {
             foreach (var entry in this)
             {
-                x_range.Min = Math.Min(x_range.Min, entry.X);
-                x_range.Max = Math.Max(x_range.Max, entry.X);
-                y_range.Min = Math.Min(y_range.Min, entry.Y);
-                y_range.Max = Math.Max(y_range.Max, entry.Y);
+                x_range = new CoordinateRange(Math.Min(x_range.Min, entry.X), Math.Max(x_range.Max, entry.X));
+                y_range = new CoordinateRange(Math.Min(y_range.Min, entry.Y), Math.Max(y_range.Max, entry.Y));
             }
         }
 
@@ -96,10 +94,8 @@ namespace CoordinatorViewer
             switch (e.ListChangedType)
             {
                 case ListChangedType.ItemAdded:
-                    x_range.Min = Math.Min(x_range.Min, x(list[e.NewIndex]));
-                    x_range.Max = Math.Max(x_range.Max, x(list[e.NewIndex]));
-                    y_range.Min = Math.Min(y_range.Min, y(list[e.NewIndex]));
-                    y_range.Max = Math.Max(y_range.Max, y(list[e.NewIndex]));
+                    x_range = new CoordinateRange(Math.Min(x_range.Min, x(list[e.NewIndex])), Math.Max(x_range.Max, x(list[e.NewIndex])));
+                    y_range = new CoordinateRange(Math.Min(y_range.Min, y(list[e.NewIndex])), Math.Max(y_range.Max, y(list[e.NewIndex])));
                     break;
 
                 case ListChangedType.ItemDeleted:
@@ -194,6 +190,19 @@ namespace CoordinatorViewer
         public AxisLimits GetLimits()
         {
             return new AxisLimits(x_range, y_range);
+        }
+
+        int IScatterSource.MinRenderIndex { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        int IScatterSource.MaxRenderIndex { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        DataPoint IScatterSource.GetNearest(Coordinates location, RenderDetails renderInfo, float maxDistance)
+        {
+            return DataPoint.None;
+        }
+
+        DataPoint IScatterSource.GetNearestX(Coordinates location, RenderDetails renderInfo, float maxDistance)
+        {
+            return DataPoint.None;
         }
     }
 }
