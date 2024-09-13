@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace CoordinatorViewer
 {
@@ -8,6 +9,7 @@ namespace CoordinatorViewer
     {
         private System.Timers.Timer timer;
         private CoordinatorData coordinator_data;
+        private CoordinatorTimeOffset? time_offset;
         private readonly BindingList<CoordinatorDeviceEntry> device_entries_list;
         private readonly Dictionary<int, int> device_entries_list_indexes;
         private readonly Dictionary<CoordinatorDeviceEntry, FormDeviceMeasurementsPlotter> device_entry_measurements;
@@ -22,6 +24,7 @@ namespace CoordinatorViewer
             InitializeComponent();
 
             coordinator_data = new();
+
             device_entries_list = new();
             device_entries_list_indexes = new();
             device_entry_measurements = new();
@@ -82,20 +85,22 @@ namespace CoordinatorViewer
                         plots_panel,
                         pc_co2_ppm, pc_temp, pc_rh, pc_vent_state);
                     device_entry_measurements.Add(entry, measurements);
+
+                    var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.sensor_location_id);
+                    var measurements_s = await coordinator_data.GetShortMeasurements(entry.sensor_location_id);
+                    var measurements_l = await coordinator_data.GetLongMeasurements(entry.sensor_location_id);
+
+                    measurements.Update(measurements_vs, measurements_s, measurements_l);
                 }
 
-                var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.sensor_location_id);
-                var measurements_s = await coordinator_data.GetShortMeasurements(entry.sensor_location_id);
-                var measurements_l = await coordinator_data.GetLongMeasurements(entry.sensor_location_id, measurements.measurements_l_teltime);
-
-                measurements.Update(measurements_vs, measurements_s, measurements_l);
+                measurements.Update(entry);
             }
 
             RunOn(plots_panel, () =>
             {
                 foreach (var pc in pc_list)
                 {
-                    pc.Fit();
+                    // pc.Fit();
                     pc.forms_plot.Update();
                 }
 
@@ -172,6 +177,12 @@ namespace CoordinatorViewer
             timer.Stop();
             try
             {
+                if(time_offset == null)
+                {
+                    var time_offset_task = await coordinator_data.GetTimeOffset();
+                    time_offset = new CoordinatorTimeOffset(time_offset_task);
+                }
+
                 var devices = await coordinator_data.GetDevices();
                 if (devices != null)
                 {

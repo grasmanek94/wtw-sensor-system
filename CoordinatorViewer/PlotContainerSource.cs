@@ -1,5 +1,4 @@
-﻿using ScottPlot;
-using ScottPlot.DataSources;
+﻿using ScottPlot.Plottables;
 using ScottPlot.WinForms;
 
 namespace CoordinatorViewer
@@ -7,7 +6,7 @@ namespace CoordinatorViewer
     internal class PlotContainerSource: IDisposable
     {
         public readonly FormsPlot forms_plot;
-        public readonly Dictionary<string, ScatterPlotSource> plots;
+        public readonly Dictionary<string, DataLogger> plots;
         public double y_min;
         public double y_max;
 
@@ -21,24 +20,16 @@ namespace CoordinatorViewer
             plots = new();
         }
 
-        public ScatterPlotSource Add(string label, IScatterSource source)
+        public DataLogger Get(string label)
         {
-            ScatterPlotSource? plot;
+            DataLogger? plot;
             if (!plots.TryGetValue(label, out plot))
             {
-                plot = new ScatterPlotSource(forms_plot, label, source);
+                plot = forms_plot.Plot.Add.DataLogger();
+                plot.LegendText = label;
                 plots.Add(label, plot);
-            }
 
-            return plot;
-        }
-
-        public ScatterPlotSource? Get(string label)
-        {
-            ScatterPlotSource? plot;
-            if (!plots.TryGetValue(label, out plot))
-            {
-                return null;
+                forms_plot.Plot.Axes.SetLimitsY(y_min, y_max);
             }
 
             return plot;
@@ -48,17 +39,9 @@ namespace CoordinatorViewer
         {
             foreach(var plot in plots.Values)
             {
-                plot.Dispose();
+                // plot.Dispose();
             }
             plots.Clear();
-        }
-
-        public void Fit()
-        {
-            forms_plot.Plot.Axes.AutoScale();// AutoScale(true);
-            forms_plot.Plot.Axes.GetAxes().ElementAt(1).Min = y_min;
-            forms_plot.Plot.Axes.GetAxes().ElementAt(1).Max = y_max;
-            forms_plot.Plot.Axes.GetAxes().ElementAt(0).Max = 1;
         }
 
         public void Dispose()
