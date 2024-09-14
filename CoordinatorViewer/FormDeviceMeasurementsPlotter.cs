@@ -88,7 +88,7 @@ namespace CoordinatorViewer
         }
 
         // keep appending data with this
-        private bool Update(BindingList<SensorMeasurement> new_measurements, bool clr = false)
+        private bool Update(IEnumerable<SensorMeasurement> new_measurements, bool clr = false)
         {
             bool added_values = false;
             int new_max_reltime = measurements_l_teltime.HasValue ? measurements_l_teltime.Value : 0;
@@ -114,7 +114,7 @@ namespace CoordinatorViewer
                     control_update_co2_ppm.container.Get(sensor_location).Add(date_time, measurement.co2_ppm);
                     control_update_temperature.container.Get(sensor_location).Add(date_time, measurement.temp_c);
                     control_update_relative_humidity.container.Get(sensor_location).Add(date_time, measurement.attainable_rh);
-                    control_update_ventilation_state.container.Get(sensor_location).Add(date_time, measurement.temp_c);
+                    control_update_ventilation_state.container.Get(sensor_location).Add(date_time, (int)measurement.state_at_this_time);
 
                     added_values = true;
                 } 
@@ -124,14 +124,17 @@ namespace CoordinatorViewer
             return added_values;
         }
 
-        public void Update(BindingList<SensorMeasurement> new_measurements_vs, BindingList<SensorMeasurement> new_measurements_s, BindingList<SensorMeasurement> new_measurements_l)
+        public void Update(IEnumerable<SensorMeasurement> new_measurements_vs, IEnumerable<SensorMeasurement> new_measurements_s, IEnumerable<SensorMeasurement> new_measurements_l)
         {
-            bool l = Update(new_measurements_l, true);
-            bool s = Update(new_measurements_s);
-            bool vs = Update(new_measurements_vs);
+            var all = new_measurements_l.Concat(new_measurements_s).Concat(new_measurements_vs).OrderBy(measurement => measurement.relative_time);
+
+            //bool l = Update(new_measurements_l, true);
+            //bool s = Update(new_measurements_s);
+            //bool vs = Update(new_measurements_vs);
 
 
-            if (vs || s || l)
+            //if (vs || s || l)
+            if(Update(all))
             {
                 Refresh();
             }
@@ -152,7 +155,7 @@ namespace CoordinatorViewer
                 control_update_co2_ppm.container.Get(sensor_location).Add(date_time, measurement.co2_ppm);
                 control_update_temperature.container.Get(sensor_location).Add(date_time, measurement.temp_c);
                 control_update_relative_humidity.container.Get(sensor_location).Add(date_time, measurement.attainable_rh);
-                control_update_ventilation_state.container.Get(sensor_location).Add(date_time, measurement.temp_c);
+                control_update_ventilation_state.container.Get(sensor_location).Add(date_time, Math.Max((int)measurement.current_ventilation_state_co2, (int)measurement.current_ventilation_state_rh));
 
                 Refresh();
             }

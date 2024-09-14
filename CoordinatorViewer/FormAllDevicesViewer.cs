@@ -1,3 +1,4 @@
+using ScottPlot.Plottables;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -18,6 +19,15 @@ namespace CoordinatorViewer
         private readonly PlotContainerSource pc_co2_ppm;
         private readonly PlotContainerSource pc_rh;
         private readonly List<PlotContainerSource> pc_list;
+
+        private enum ViewMode
+        {
+            FULL,
+            JUMP,
+            SLIDE
+        }
+
+        private ViewMode current_view_mode;
 
         public FormAllDevicesViewer()
         {
@@ -56,6 +66,63 @@ namespace CoordinatorViewer
             data_grid.SelectionChanged += DeviceSelectionChanged;
 
             AddPlotToTable();
+
+            current_view_mode = ViewMode.FULL;
+
+            data_grid.MouseClick += MouseClickAction;
+        }
+
+        private void MouseClickAction(object? sender, MouseEventArgs e)
+        {
+            if(e.Button == MouseButtons.Right)
+            {
+                Debug.WriteLine("SwitchViewMode");
+                SwitchViewMode();
+            }
+        }
+
+        private void SwitchViewMode()
+        {
+            switch (current_view_mode)
+            {
+                case ViewMode.FULL:
+                    SetAllLoggerViewMode(ViewMode.JUMP);
+                    break;
+
+                case ViewMode.JUMP:
+                    SetAllLoggerViewMode(ViewMode.SLIDE);
+                    break;
+
+                case ViewMode.SLIDE:
+                    SetAllLoggerViewMode(ViewMode.FULL);
+                    break;
+            }
+        }
+
+        private void SetAllLoggerViewMode(ViewMode view_mode)
+        {
+            current_view_mode = view_mode;
+
+            foreach (var pc in pc_list)
+            {
+                pc.forms_plot.Plot.PlottableList.ForEach(p =>
+                {
+                    switch (view_mode)
+                    {
+                        case ViewMode.FULL:
+                            ((DataLogger)p).ViewFull();
+                            break;
+
+                        case ViewMode.JUMP:
+                            ((DataLogger)p).ViewJump();
+                            break;
+
+                        case ViewMode.SLIDE:
+                            ((DataLogger)p).ViewSlide();
+                            break;
+                    }
+                });
+            }
         }
 
         private void AddPlotToTable()
@@ -177,7 +244,7 @@ namespace CoordinatorViewer
             timer.Stop();
             try
             {
-                if(time_offset == null)
+                if (time_offset == null)
                 {
                     var time_offset_task = await coordinator_data.GetTimeOffset();
                     time_offset = new CoordinatorTimeOffset(time_offset_task);

@@ -28,7 +28,6 @@ namespace CoordinatorViewer
 
         private static string CustomFormatter(DateTime dt)
         {
-            Debug.WriteLine("d");
             return $"{dt:dd-MM}\n{dt:HH:mm}";
         }
 
