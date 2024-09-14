@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using ScottPlot;
+using System.ComponentModel;
 using System.Diagnostics.Metrics;
 
 namespace CoordinatorViewer
@@ -43,14 +44,15 @@ namespace CoordinatorViewer
                     });
                 }
 
-                if (container?.forms_plot?.Plot?.Axes?.GetAxes()?.ElementAt(0)?.Label?.Text != null)
-                {
-                    container.forms_plot.Plot.Axes.GetAxes().ElementAt(0).Label.Text = x_label;
-                }
+                //if (container?.forms_plot?.Plot?.Axes?.GetAxes()?.Where(axis => axis is IXAxis)?.First()?.Label?.Text != null)
+                //{
+                //   container.forms_plot.Plot.Axes.GetAxes().Where(axis => axis is IXAxis).First().Label.Text = x_label;
+                //}
 
-                if (container?.forms_plot?.Plot?.Axes?.GetAxes()?.ElementAt(1)?.Label?.Text != null)
+                
+                if(container?.forms_plot?.Plot?.Axes?.Left?.Label?.Text != null)
                 {
-                    container.forms_plot.Plot.Axes.GetAxes().ElementAt(1).Label.Text = y_label;
+                    container.forms_plot.Plot.Axes.Left.Label.Text = y_label;
                 }
             }
         }
@@ -62,14 +64,16 @@ namespace CoordinatorViewer
         private FormPlotControlUpdater control_update_temperature;
         private FormPlotControlUpdater control_update_relative_humidity;
         private FormPlotControlUpdater control_update_ventilation_state;
+        private CoordinatorTimeOffset time_offset;
 
         private bool use_headroom;
 
         public FormDeviceMeasurementsPlotter(SensorLocation sensor_location, 
             Control update_control,
-            PlotContainerSource plot_container_co2_ppm, PlotContainerSource plot_container_temperature, PlotContainerSource plot_container_relative_humidity, PlotContainerSource plot_container_ventilation_state)
+            PlotContainerSource plot_container_co2_ppm, PlotContainerSource plot_container_temperature, PlotContainerSource plot_container_relative_humidity, PlotContainerSource plot_container_ventilation_state, CoordinatorTimeOffset time_offset)
         {
             this.sensor_location = sensor_location.ToString();
+            this.time_offset = time_offset;
 
             measurements_l_teltime = null;
 
@@ -106,10 +110,11 @@ namespace CoordinatorViewer
                 new_max_reltime = Math.Max(new_max_reltime, measurement.relative_time);
                 if ((measurements_l_teltime.HasValue && measurements_l_teltime.Value < measurement.relative_time) || (!measurements_l_teltime.HasValue))
                 {
-                    control_update_co2_ppm.container.Get(sensor_location).Add(measurement.relative_time, measurement.co2_ppm);
-                    control_update_temperature.container.Get(sensor_location).Add(measurement.relative_time, measurement.temp_c);
-                    control_update_relative_humidity.container.Get(sensor_location).Add(measurement.relative_time, measurement.attainable_rh);
-                    control_update_ventilation_state.container.Get(sensor_location).Add(measurement.relative_time, measurement.temp_c);
+                    double date_time = time_offset.GetDate(measurement.relative_time).ToOADate();
+                    control_update_co2_ppm.container.Get(sensor_location).Add(date_time, measurement.co2_ppm);
+                    control_update_temperature.container.Get(sensor_location).Add(date_time, measurement.temp_c);
+                    control_update_relative_humidity.container.Get(sensor_location).Add(date_time, measurement.attainable_rh);
+                    control_update_ventilation_state.container.Get(sensor_location).Add(date_time, measurement.temp_c);
 
                     added_values = true;
                 } 
@@ -143,10 +148,11 @@ namespace CoordinatorViewer
 
             if ((measurements_l_teltime.HasValue && measurements_l_teltime.Value < measurement.relative_time) || (!measurements_l_teltime.HasValue))
             {
-                control_update_co2_ppm.container.Get(sensor_location).Add(measurement.relative_time, measurement.co2_ppm);
-                control_update_temperature.container.Get(sensor_location).Add(measurement.relative_time, measurement.temp_c);
-                control_update_relative_humidity.container.Get(sensor_location).Add(measurement.relative_time, measurement.attainable_rh);
-                control_update_ventilation_state.container.Get(sensor_location).Add(measurement.relative_time, measurement.temp_c);
+                double date_time = time_offset.GetDate(measurement.relative_time).ToOADate();
+                control_update_co2_ppm.container.Get(sensor_location).Add(date_time, measurement.co2_ppm);
+                control_update_temperature.container.Get(sensor_location).Add(date_time, measurement.temp_c);
+                control_update_relative_humidity.container.Get(sensor_location).Add(date_time, measurement.attainable_rh);
+                control_update_ventilation_state.container.Get(sensor_location).Add(date_time, measurement.temp_c);
 
                 Refresh();
             }

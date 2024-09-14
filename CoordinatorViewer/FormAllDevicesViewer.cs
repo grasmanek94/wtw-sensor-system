@@ -83,7 +83,7 @@ namespace CoordinatorViewer
                     measurements = new FormDeviceMeasurementsPlotter(
                         entry.sensor_location_id,
                         plots_panel,
-                        pc_co2_ppm, pc_temp, pc_rh, pc_vent_state);
+                        pc_co2_ppm, pc_temp, pc_rh, pc_vent_state, time_offset);
                     device_entry_measurements.Add(entry, measurements);
 
                     var measurements_vs = await coordinator_data.GetVeryShortMeasurements(entry.sensor_location_id);

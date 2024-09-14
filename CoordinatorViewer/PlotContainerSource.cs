@@ -1,5 +1,9 @@
-﻿using ScottPlot.Plottables;
+﻿using ScottPlot;
+using ScottPlot.Plottables;
+using ScottPlot.TickGenerators;
 using ScottPlot.WinForms;
+using System;
+using System.Diagnostics;
 
 namespace CoordinatorViewer
 {
@@ -9,6 +13,7 @@ namespace CoordinatorViewer
         public readonly Dictionary<string, DataLogger> plots;
         public double y_min;
         public double y_max;
+        private bool date_time_added;
 
         public PlotContainerSource(double y_min = 0.0, double y_max = 0.0) { 
             forms_plot = new FormsPlot();
@@ -16,8 +21,23 @@ namespace CoordinatorViewer
 
             this.y_min = y_min;
             this.y_max = y_max;
+            date_time_added = false;
 
             plots = new();
+        }
+
+        private static string CustomFormatter(DateTime dt)
+        {
+            Debug.WriteLine("d");
+            return $"{dt:dd-MM}\n{dt:HH:mm}";
+        }
+
+        private void AddDateTime()
+        {         
+            forms_plot.Plot.Axes.DateTimeTicksBottom();
+            ((DateTimeAutomatic)forms_plot.Plot.Axes.Bottom.TickGenerator).LabelFormatter = CustomFormatter;
+
+            date_time_added = true;
         }
 
         public DataLogger Get(string label)
@@ -30,6 +50,11 @@ namespace CoordinatorViewer
                 plots.Add(label, plot);
 
                 forms_plot.Plot.Axes.SetLimitsY(y_min, y_max);
+               
+                if(!date_time_added)
+                {
+                    AddDateTime();
+                }
             }
 
             return plot;
