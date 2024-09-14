@@ -23,7 +23,10 @@ device_data::device_data() :
     current_ventilation_state_rh{ requested_ventilation_state_medium },
     latest_measurement{},
     average_measurement{},
-    _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }
+    _tmp_avg{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    calculated_co2_ppm_low{0},
+    calculated_co2_ppm_medium{0},
+    calculated_co2_ppm_high{0}
 {}
 
 static void get_average(RingBufInterface<measurement_entry>* container, measurement_entry_avg& tmp_avg, measurement_entry& avg, unsigned long time_span) {
@@ -178,7 +181,10 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
         const float convert_to_numeric_state = 16.0f / 2.0f;
         const auto& co2_data = global_config_data.get_co2_ppm_data(average_temp_inside_for_co2, measured_inlet_temp, ventilation_aggressiveness);
         latest_measurement.set_ventilation_aggressiveness((int)(ventilation_aggressiveness * convert_to_numeric_state));
-
+        calculated_co2_ppm_low = co2_data.low;
+        calculated_co2_ppm_medium = co2_data.medium;
+        calculated_co2_ppm_high = co2_data.high;
+        
         current_ventilation_state_co2 = determine_current_ventilation_state(current_ventilation_state_co2, co2_ppm, co2_data.low, co2_data.medium, co2_data.high);
 
         if (use_full_rh_calculation) {
@@ -256,6 +262,9 @@ String device_data::toString(int index) const {
         + String(very_short_data.size())        + ",\t"
         + String(short_data.size())             + ",\t"
         + String(long_data.size())              + ",\t"
+        + String(calculated_co2_ppm_low)        + ",\t"
+        + String(calculated_co2_ppm_medium)     + ",\t"
+        + String(calculated_co2_ppm_high)       + ",\t"
         + latest_measurement.toString();
 }
 
@@ -269,6 +278,9 @@ String device_data::getHeaders() const {
         "has_recent_data,\t"
         "very_short_count,\t"
         "short_count,\t"
-        "long_count,\t")
+        "long_count,\t"
+        "calculated_co2_ppm_low,\t"
+        "calculated_co2_ppm_medium,\t"
+        "calculated_co2_ppm_high,\t")
         + latest_measurement.getHeaders();
 }

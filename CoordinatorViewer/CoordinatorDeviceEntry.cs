@@ -11,6 +11,9 @@
         public int very_short_count { get; set; }
         public int short_count { get; set; }
         public int long_count { get; set; }
+        public int calculated_co2_ppm_low { get; set; }
+        public int calculated_co2_ppm_medium { get; set; }
+        public int calculated_co2_ppm_high { get; set; }
         public int relative_time { get; set; }
         public int co2_ppm { get; set; }
         public float rh { get; set; }

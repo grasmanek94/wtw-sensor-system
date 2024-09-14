@@ -50,6 +50,21 @@
                 dest.long_count = src.long_count;
                 changed = true;
             }
+            if (src.calculated_co2_ppm_low != dest.calculated_co2_ppm_low)
+            {
+                dest.calculated_co2_ppm_low = src.calculated_co2_ppm_low;
+                changed = true;
+            }
+            if (src.calculated_co2_ppm_medium != dest.calculated_co2_ppm_medium)
+            {
+                dest.calculated_co2_ppm_medium = src.calculated_co2_ppm_medium;
+                changed = true;
+            }
+            if (src.calculated_co2_ppm_high != dest.calculated_co2_ppm_high)
+            {
+                dest.calculated_co2_ppm_high = src.calculated_co2_ppm_high;
+                changed = true;
+            }
             if (src.relative_time != dest.relative_time)
             {
                 dest.relative_time = src.relative_time;

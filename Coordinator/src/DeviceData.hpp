@@ -30,7 +30,10 @@ struct device_data {
     measurement_entry latest_measurement;
     measurement_entry average_measurement;
     measurement_entry_avg _tmp_avg;
-
+    int calculated_co2_ppm_low;
+    int calculated_co2_ppm_medium;
+    int calculated_co2_ppm_high;
+    
     device_data();
 
     template<typename T>
