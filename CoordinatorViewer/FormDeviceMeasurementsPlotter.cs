@@ -170,8 +170,11 @@ namespace CoordinatorViewer
         {
             if (use_headroom)
             {
-                control_update_relative_humidity.container.y_min = -1.0f;
-                control_update_relative_humidity.container.y_max = 50.0f;
+                control_update_relative_humidity.container.y_min = 0.0;
+                control_update_relative_humidity.container.y_max = 50.0;
+                //control_update_relative_humidity.container.plots.ElementAt(0).Value.ManageAxisLimits = true;
+                control_update_relative_humidity.container.plots.ElementAt(0).Value.Axes.YAxis.Min = 0.0;
+                control_update_relative_humidity.container.plots.ElementAt(0).Value.Axes.YAxis.Max = 50.0;
             }
 
             control_update_co2_ppm.CheckAdd("date/time", "CO2 PPM");
