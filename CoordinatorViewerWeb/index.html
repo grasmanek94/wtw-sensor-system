@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Environmental Monitor Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    nav{
+      margin-top: 1rem;
+      text-align: center;
+    }
+    .tab-button {
+      margin: 0 0.5rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+    main {
+      padding: 1rem;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .property-selector {
+      margin-bottom: 1rem;
+    }
+    #plot {
+      width: 100%;
+      height: 80vh;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    .speed-button {
+      background-color: #007BFF; 
+      color: white; 
+      padding: 0.5rem 1rem; 
+      margin: 0 0.5rem; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <button class="tab-button" data-tab="graph">Graph View</button>
+      <button class="tab-button" data-tab="devices">Device Info</button>
+    </nav>
+  </header>
+  <main>
+    <section id="graph" class="tab-content active">
+      <div class="property-selector">
+        <label for="property">Select Property:</label>
+        <select id="property">
+          <option value="temp_c">Temperature (°C)</option>
+          <option value="co2_ppm">CO2 (PPM)</option>
+          <option value="rh">Relative Humidity (%)</option>
+          <option value="rh_headroom">Relative Humidity (Headroom %)</option>
+          <option value="state_at_this_time">Ventilation State</option>
+        </select>
+      </div>
+      <div id="plot"></div>
+    </section>
+    <section id="devices" class="tab-content">
+      <table id="deviceTable">
+        <thead>
+          <tr>
+            <th>Location</th>
+            <th>MAC</th>
+            <th>Status</th>
+            <th>Temp (°C)</th>
+            <th>CO2 (PPM)</th>
+            <th>RH (%)</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <table id="ithoStatus">
+        <thead>
+          <tr>
+            <th>Current FAN Speed %</th>
+            <th>IN RPM</th>
+            <th>OUT RPM</th>
+            <th>Status</th>
+            <th>Fault Code</th>
+            <th>Bypass</th>
+            <th>Valve</th>
+            <th>Mode</th>
+            <th>Supply Temp</th>
+            <th>Exhaust Temp</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>     
+      <div style="text-align: center; margin: 1rem 0;">
+        <button class="speed-button" onclick="setIthoSpeed('low')">Low</button>
+        <button class="speed-button" onclick="setIthoSpeed('medium')">Medium</button>
+        <button class="speed-button" onclick="setIthoSpeed('high')">High</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- External Libraries -->
+  <script src="js_ext/plotly-2.27.0.min.js"></script>
+  <script src="js_ext/axios.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
