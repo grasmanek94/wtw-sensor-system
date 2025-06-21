@@ -15,7 +15,7 @@
 #include "VentilationState.hpp"
 #include "WiFiReconnect.hpp"
 
-#define COORDINATOR_VERSION "2.8"
+#define COORDINATOR_VERSION "2.9"
 
 AsyncWebServer server(80);
 
@@ -29,6 +29,8 @@ IPAddress static_secondary_dns(INADDR_NONE);
 #if GPS_TIME_ENABLED
 gps_time gps_time_processor;
 #endif
+
+static void add_test_data();
 
 void setup_static_ip() {
     if (global_config_data.get_static_ip().length() > 0) {
@@ -170,6 +172,8 @@ void setup() {
     if (global_config_data.interval < 1) {
         global_config_data.interval = 1;
     }
+
+    //add_test_data();
 }
 
 void loop() {
@@ -179,4 +183,21 @@ void loop() {
     check_wifi(); 
     check_measurements();
     check_http_pages_deferred_reset();
+}
+
+static void add_test_data() {
+	int location_id = 0;
+	float rh = 0.0f;
+	float temp = 0.0f;
+	int co2_ppm = 0;
+	int sensor_status = 0;
+    String device_id = "00000000";
+
+	if (!sensors[location_id].is_associated()) {
+		sensors[location_id].associate(device_id, (SENSOR_LOCATION)location_id);
+	}
+
+	for(long sequence_number = 0; sequence_number < 100000; ++sequence_number) {
+		sensors[location_id].push(co2_ppm, rh, temp, sensor_status, sequence_number);
+	}
 }

@@ -6,6 +6,9 @@
 #include <ESPAsyncWebSrv.h>
 #include <Update.h>
 
+#include <algorithm>
+#include <mutex>
+
 static const int INVALID_DEVICE_ID = -1;
 
 static const char flash_html[] PROGMEM = R"rawliteral(
@@ -220,11 +223,17 @@ void http_page_devices(AsyncWebServerRequest* request) {
 static size_t process_chunked_response_input_data(
 	uint8_t* buffer, size_t maxLen, size_t index,
 	int* entry_idx, RingBufInterface<measurement_entry>* input_data,
-	bool updates_only_sequence_number, bool updates_only_timestamp,
-	unsigned long sequence_number, unsigned long timestamp) {
+	std::mutex* mtx_input_data, bool updates_only_sequence_number, 
+	bool updates_only_timestamp, unsigned long sequence_number, 
+	unsigned long timestamp) {
+
 	if (entry_idx == nullptr) {
 		return 0;
 	}
+
+	ring_mutex_guard guard{*mtx_input_data};
+
+	maxLen = std::min((size_t)2048, maxLen);
 
 	size_t written_len = 0;
 	while (true) {
@@ -252,7 +261,14 @@ static size_t process_chunked_response_input_data(
 		size_t total_len = written_len + current_len;
 
 		if (total_len > maxLen) {
-			Serial.println("total_len > maxLen");
+			Serial.println("(written_len + current_len) > maxLen");
+			Serial.print("(");
+			Serial.print(written_len);
+			Serial.print(" + ");
+			Serial.print(current_len);
+			Serial.print(") > ");
+			Serial.println(maxLen);
+
 			// no point in writing more here, this shouldn't be ever called though.
 			// logic to make this work will be difficult, and I'm lazy (GoodEnough(TM))
 			delete entry_idx;
@@ -268,6 +284,7 @@ static size_t process_chunked_response_input_data(
 		++(*entry_idx);
 
 		if ((*entry_idx) < input_data->size()) {
+			/* Check if the next entry can also be added, if yes, do so */
 			if ((input_data->at(*entry_idx).toString().length() + written_len) < maxLen) {
 				continue;
 			}
@@ -281,7 +298,7 @@ static size_t process_chunked_response_input_data(
 	}
 }
 
-static void dump_measurements_data(AsyncWebServerRequest* request, RingBufInterface<measurement_entry>* input_data) {
+static void dump_measurements_data(AsyncWebServerRequest* request, RingBufInterface<measurement_entry>* input_data, std::mutex* mtx_input_data) {
 	if (input_data->isEmpty()) {
 		return request->send(HTTP_OK_NO_CONTENT, "text/plain");
 	}
@@ -307,12 +324,13 @@ static void dump_measurements_data(AsyncWebServerRequest* request, RingBufInterf
 	int* entry_idx = new int;
 	*entry_idx = 0;
 
-	AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [entry_idx, input_data, updates_only_sequence_number, sequence_number, updates_only_timestamp, relative_time](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-		return process_chunked_response_input_data(buffer, maxLen, index, entry_idx, input_data, updates_only_sequence_number, updates_only_timestamp, relative_time, sequence_number);
+	AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [entry_idx, input_data, mtx_input_data, updates_only_sequence_number, sequence_number, updates_only_timestamp, relative_time](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+		return process_chunked_response_input_data(buffer, maxLen, index, entry_idx, input_data, mtx_input_data, updates_only_sequence_number, updates_only_timestamp, relative_time, sequence_number);
 		});
 
 	response->setCode(HTTP_OK);
 	response->setContentType("text/plain");
+
 	request->send(response);
 }
 
@@ -326,7 +344,7 @@ void http_page_very_short_data(AsyncWebServerRequest* request) {
 		return request->send(HTTP_BAD_REQUEST, "text/plain");
 	}
 
-	dump_measurements_data(request, &(sensors[location_id].very_short_data));
+	dump_measurements_data(request, &(sensors[location_id].very_short_data), &(sensors[location_id].mtx_very_short_data));
 }
 
 void http_page_short_data(AsyncWebServerRequest* request) {
@@ -339,7 +357,7 @@ void http_page_short_data(AsyncWebServerRequest* request) {
 		return request->send(HTTP_BAD_REQUEST, "text/plain");
 	}
 
-	dump_measurements_data(request, &(sensors[location_id].short_data));
+	dump_measurements_data(request, &(sensors[location_id].short_data), &(sensors[location_id].mtx_short_data));
 }
 
 void http_page_long_data(AsyncWebServerRequest* request) {
@@ -352,7 +370,7 @@ void http_page_long_data(AsyncWebServerRequest* request) {
 		return request->send(HTTP_BAD_REQUEST, "text/plain");
 	}
 
-	dump_measurements_data(request, &(sensors[location_id].long_data));
+	dump_measurements_data(request, &(sensors[location_id].long_data), &(sensors[location_id].mtx_long_data));
 }
 
 String http_page_flash_processor(const String& var) {

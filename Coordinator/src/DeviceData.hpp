@@ -6,6 +6,7 @@
 #include "RingBuf.h"
 
 #include <array>
+#include <mutex>
 
 const size_t SENSORS_COUNT = (size_t)SENSOR_LOCATION::NUM_LOCATIONS;
 const size_t SENSOR_EXPECTED_INTERVAL = 15 * 1000; // 15 s
@@ -17,19 +18,31 @@ const size_t SENSOR_VERY_SHORT_MEASUREMENT_COUNT = SENSOR_VERY_SHORT_MEASUREMENT
 const size_t SENSOR_SHORT_MEASUREMENT_COUNT = SENSOR_SHORT_MEASUREMENT_PERIOD / SENSOR_VERY_SHORT_MEASUREMENT_PERIOD;
 const size_t SENSOR_LONG_MEASUREMENT_COUNT = SENSOR_LONG_MEASUREMENT_PERIOD / SENSOR_SHORT_MEASUREMENT_PERIOD;
 
+using ring_mutex_guard = std::lock_guard<std::mutex>;
+
 struct device_data {
     String id;
     SENSOR_LOCATION loc;
+
     size_t current_very_short_push_count;
     size_t current_short_push_count;
+
     RingBuf<measurement_entry, SENSOR_VERY_SHORT_MEASUREMENT_COUNT> very_short_data;
     RingBuf<measurement_entry, SENSOR_SHORT_MEASUREMENT_COUNT> short_data;
     RingBuf<measurement_entry, SENSOR_LONG_MEASUREMENT_COUNT> long_data;
+
+    mutable std::mutex mtx_very_short_data;
+    mutable std::mutex mtx_short_data;
+    mutable std::mutex mtx_long_data;
+
     requested_ventilation_state current_ventilation_state_co2;
     requested_ventilation_state current_ventilation_state_rh;
+
     measurement_entry latest_measurement;
     measurement_entry average_measurement;
+
     measurement_entry_avg _tmp_avg;
+
     int calculated_co2_ppm_low;
     int calculated_co2_ppm_medium;
     int calculated_co2_ppm_high;

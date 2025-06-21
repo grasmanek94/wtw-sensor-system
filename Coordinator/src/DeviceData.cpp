@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include <array>
+#include <mutex>
 
 std::array<device_data,SENSORS_COUNT> sensors;
 
@@ -18,6 +19,9 @@ device_data::device_data() :
     current_short_push_count{ 0 },
     short_data{},
     long_data{},
+    mtx_very_short_data{},
+    mtx_short_data{},
+    mtx_long_data{},
     // !! safety !! - Occupants present = medium is required. Low is "no occupants".
     current_ventilation_state_co2{ requested_ventilation_state_medium },
     current_ventilation_state_rh{ requested_ventilation_state_medium },
@@ -201,22 +205,39 @@ void device_data::push(int co2_ppm, float rh, float temp_c, int sensor_status, u
 
     latest_measurement.set_state_at_this_time(get_highest_ventilation_state(current_ventilation_state_co2, current_ventilation_state_rh));
 
-    very_short_data.pushOverwrite(latest_measurement);
-    ++current_very_short_push_count;
+    {
+        ring_mutex_guard guard{mtx_very_short_data};
+        very_short_data.pushOverwrite(latest_measurement);
+        ++current_very_short_push_count;
+    }
 
     if (current_very_short_push_count == SENSOR_VERY_SHORT_MEASUREMENT_COUNT) {
         current_very_short_push_count = 0;
 
-        get_average(&very_short_data, _tmp_avg, average_measurement, SENSOR_VERY_SHORT_MEASUREMENT_PERIOD);
-        short_data.pushOverwrite(average_measurement);
-        ++current_short_push_count;
+        {
+            ring_mutex_guard guard{mtx_very_short_data};
+            get_average(&very_short_data, _tmp_avg, average_measurement, SENSOR_VERY_SHORT_MEASUREMENT_PERIOD);
+        }
+
+        {
+            ring_mutex_guard guard{mtx_short_data};
+            short_data.pushOverwrite(average_measurement);
+            ++current_short_push_count;
+        }
     }
 
     if (current_short_push_count == SENSOR_SHORT_MEASUREMENT_COUNT) {
         current_short_push_count = 0;
 
-        get_average(&short_data, _tmp_avg, average_measurement, SENSOR_SHORT_MEASUREMENT_PERIOD);
-        long_data.pushOverwrite(average_measurement);
+        {
+            ring_mutex_guard guard{mtx_short_data};
+            get_average(&short_data, _tmp_avg, average_measurement, SENSOR_SHORT_MEASUREMENT_PERIOD);
+        }
+
+        {
+            ring_mutex_guard guard{mtx_long_data};
+            long_data.pushOverwrite(average_measurement);
+        }
     }
 }
 
@@ -252,6 +273,25 @@ requested_ventilation_state device_data::get_highest_ventilation_state() const {
 }
 
 String device_data::toString(int index) const {
+    long very_short_data_size = 0;
+    long short_data_size = 0;
+    long long_data_size = 0;
+    
+    {
+        ring_mutex_guard guard{mtx_very_short_data};
+        very_short_data_size = very_short_data.size();
+    }
+    
+    {
+        ring_mutex_guard guard{mtx_short_data};
+        short_data_size = short_data.size();
+    }
+    
+    {
+        ring_mutex_guard guard{mtx_long_data};
+        long_data_size = long_data.size();
+    }
+
     return
         String(index)                           + ",\t"
         + id                                    + ",\t"
@@ -259,9 +299,9 @@ String device_data::toString(int index) const {
         + String(current_ventilation_state_rh)  + ",\t"
         + String(is_associated())               + ",\t"
         + String(has_recent_data())             + ",\t"
-        + String(very_short_data.size())        + ",\t"
-        + String(short_data.size())             + ",\t"
-        + String(long_data.size())              + ",\t"
+        + String(very_short_data_size)          + ",\t"
+        + String(short_data_size)               + ",\t"
+        + String(long_data_size)                + ",\t"
         + String(calculated_co2_ppm_low)        + ",\t"
         + String(calculated_co2_ppm_medium)     + ",\t"
         + String(calculated_co2_ppm_high)       + ",\t"
