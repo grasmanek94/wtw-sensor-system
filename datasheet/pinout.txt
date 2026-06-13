@@ -10,3 +10,13 @@ USB 5V <=> Pin 4 (Vin)
 See the headers in "Sensor\src\Sensor_*.hpp" to check the pins for each sensor. 
 SHT40 and SHT31 are powered via ESP32 3V3.
 S8 is powered via USB 5V.
+
+Converting from esp32 lolin to esp32-s3-eth:
+
+34 = Used as Analog Input (white) 	--> GPIO1  --> pin 25 (ADC1_CH0)
+17 = UART TX (blue to co2 sensor) 	--> GPIO17 --> pin 34 (U1TXD)
+16 = UART RX (green) 				--> GPIO18 --> pin 31 (U1RXD)
+4 = scl (blue to temp sensor) 		--> GPIO3  --> pin 27
+15 = sda (yellow) 					--> GPIO15 --> pin 29
+5v use vsys
+3v use 3v3

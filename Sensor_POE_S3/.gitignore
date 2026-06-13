@@ -1,0 +1,5 @@
+__vm/
+obj/
+.vs/
+.pio/
+.vscode/
