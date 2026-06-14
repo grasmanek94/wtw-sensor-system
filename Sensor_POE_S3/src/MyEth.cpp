@@ -73,21 +73,78 @@ void init_ethernet() {
 
     ethernet_spi.begin(W5500_PIN_SCLK, W5500_PIN_MISO, W5500_PIN_MOSI, W5500_PIN_CS);
 
-    Serial.println(__LINE__);
-
     // Initialize Ethernet (DHCP)
     pinMode(W5500_PIN_CS, OUTPUT);
     digitalWrite(W5500_PIN_CS, HIGH);
 
     Network.onEvent(on_ethernet_event);
-    ETH.begin(
+    if(ETH.begin(
         ETH_PHY_W5500,
         0,
         W5500_PIN_CS,
         W5500_PIN_INT,
         W5500_PIN_RST,
         ethernet_spi
-    );
+    ))
+    {
+        static char tmp_hostname[32];
+        static String tmp_hostname_str;
+
+        sprintf(tmp_hostname, "%02x%02x%02x%02x%02x%02x",
+          ethernet_mac[0], ethernet_mac[1], ethernet_mac[2],
+          ethernet_mac[3], ethernet_mac[4], ethernet_mac[5]);
+        tmp_hostname_str = tmp_hostname;
+
+        ETH.setHostname(tmp_hostname);
+
+        if (!MDNS.begin("sr-" + tmp_hostname_str + ".local")) {
+            Serial.println("Error setting up MDNS responder!");
+        }
+
+        /*esp_eth_handle_t eth_handle = ETH.handle();
+
+        if (eth_handle != NULL) {
+            esp_err_t err_stop = esp_eth_stop(eth_handle);
+            if (err_stop != ESP_OK) 
+            {
+                Serial.printf("Failed to stop driver: %d\n", err_stop);
+            }
+
+            // Disable auto-negotiation to stop the chip from jumping to 100Mbps
+            bool autonego = false;
+            esp_err_t err_auto = esp_eth_ioctl(eth_handle, ETH_CMD_S_AUTONEGO, &autonego);
+
+            // Force link speed strictly to 10M
+            eth_speed_t speed = ETH_SPEED_10M;
+            esp_err_t err_speed = esp_eth_ioctl(eth_handle, ETH_CMD_S_SPEED, &speed);
+
+            // Set Duplex mode. Try ETH_DUPLEX_FULL first, switch to ETH_DUPLEX_HALF if dropouts persist
+            eth_duplex_t duplex = ETH_DUPLEX_FULL; 
+            esp_err_t err_duplex = esp_eth_ioctl(eth_handle, ETH_CMD_S_DUPLEX_MODE, &duplex);
+
+            // CRITICAL: Restart the ethernet driver with the new locked 10Mbps properties
+            esp_err_t err_start = esp_eth_start(eth_handle);
+
+            if (err_auto == ESP_OK && err_speed == ESP_OK && err_duplex == ESP_OK && err_start == ESP_OK) 
+            {
+                Serial.println("Successfully locked PHY to 10 Mbps!");
+            } else {
+                Serial.printf("Error configuring PHY! Codes: Auto:%d Speed:%d Duplex:%d Start:%d\n", err_auto, err_speed, err_duplex, err_start);
+            }
+
+            ETH.begin(
+                ETH_PHY_W5500,
+                0,
+                W5500_PIN_CS,
+                W5500_PIN_INT,
+                W5500_PIN_RST,
+                ethernet_spi
+            );
+        } else {
+            Serial.println("Failed to obtain raw Ethernet driver handle.");
+        }*/
+
+    }
 }
 
 bool is_ethernet_connected()

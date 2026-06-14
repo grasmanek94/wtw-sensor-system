@@ -12,6 +12,8 @@
 #include "Sensor_SHT31.hpp"
 ///////////////////////////////////////////////////////
 
+#include <esp_eth_driver.h>
+#include <esp_pm.h>
 #include <ESPAsyncWebServer.h>
 #include <HTTPClient.h>
 #include <UrlEncode.h>
@@ -124,9 +126,19 @@ sensor_entry_callback make_switcher() {
 }
 
 void setup() {
+    setCpuFrequencyMhz(80);
+
     delay(3000);
 	Serial.begin(115200);
 	Serial.println(F("Starting..."));
+
+    esp_pm_config_t pm_config = {
+        .max_freq_mhz = 80,
+        .min_freq_mhz = 80,
+        .light_sleep_enable = true
+    };
+
+    esp_pm_configure((void*)&pm_config);
 
     auto switcher = make_switcher();
 
