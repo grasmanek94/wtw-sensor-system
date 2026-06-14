@@ -32,17 +32,23 @@ void Sensor_SHT31::setup()
 {
 	if (i2c_intf == nullptr) {
 		i2c_intf = new TwoWire(wire);
-		i2c_intf->begin(i2c_sda_pin, i2c_scl_pin, 100000);
-		delay(100);
-		i2c_intf->end();
-		delay(100);
-		i2c_intf->begin();
+
+		i2c_intf->setPins(i2c_sda_pin, i2c_scl_pin);
+		if(!i2c_intf->begin())
+		{
+			Serial.println("SHT31::I2C::1::Fail");
+		}
+		i2c_intf->setClock(100000);
+
 		delay(500);
 	}
 
 	if (sht31 == nullptr) {
 		sht31 = new SHT31(SHT31_ADDRESS, i2c_intf);
-		sht31->begin();
+		if(sht31->begin())
+		{
+			Serial.println("SHT31::I2C::2::Fail");
+		}
 	}
 
 	if(sht31 != nullptr)

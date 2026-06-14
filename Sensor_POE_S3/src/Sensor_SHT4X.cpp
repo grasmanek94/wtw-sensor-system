@@ -24,17 +24,22 @@ Sensor_SHT4X::~Sensor_SHT4X()
 
 void Sensor_SHT4X::setup()
 {
-    if (i2c_intf != nullptr) {
+    if (i2c_intf == nullptr) 
+    {
         i2c_intf = new TwoWire(wire);
-        i2c_intf->begin(i2c_sda_pin, i2c_scl_pin, 100000);
-        delay(1000);
+        i2c_intf->setPins(i2c_sda_pin, i2c_scl_pin);
+        delay(100);
     }
 
-    if (!sht4.begin(i2c_intf)) {
+    if (!sht4.begin(i2c_intf)) 
+    {
         found = false;
         Serial.println("SHT4x sensor NOT FOUND");
         return;
     }
+
+    i2c_intf->setClock(100000);
+    delay(100);
     
     found = true;
 
@@ -95,6 +100,11 @@ void Sensor_SHT4X::print_measurement() const
 
 void Sensor_SHT4X::update()
 {
+    if (i2c_intf == nullptr) 
+    {
+        return;
+    }
+
     sensors_event_t humidity, temp;
 
     if (sht4.getEvent(&humidity, &temp)) {

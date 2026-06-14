@@ -12,6 +12,7 @@ Sensor_S8::Sensor_S8(int hardware_serial_nr, SENSOR_LOCATION location):
 {
     data.co2 = 0;
     data.meter_status = 0;
+    uart = new S8_UART(ss);
 }
 
 Sensor_S8::~Sensor_S8()
@@ -24,15 +25,10 @@ Sensor_S8::~Sensor_S8()
 
 void Sensor_S8::setup()
 {  
-    if (uart != nullptr) {
-        ss.end();
-        delete uart;
-        uart = nullptr;
-    }
-
+    ss.end();
+    ss.setPins(GPIO_NUM_17, GPIO_NUM_18);
     ss.begin(S8_BAUDRATE);
-    uart = new S8_UART(ss);
-
+    
     // Check if S8 is available
     uart->get_firmware_version(data.firm_version);
     int len = strlen(data.firm_version);
