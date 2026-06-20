@@ -210,6 +210,18 @@ void perform_measurements() {
     }
 }
 
+static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
+    if (evt->event_id == HTTP_EVENT_ON_DATA)
+    {
+        if (evt->data && evt->data_len > 0) {
+            Serial.write((const uint8_t*)evt->data, evt->data_len);
+            Serial.println();
+        }
+    }
+
+    return ESP_OK;
+}
+
 void perform_http_request(const char* request) {
     esp_http_client_config_t config = {
         .url = request,
@@ -218,30 +230,27 @@ void perform_http_request(const char* request) {
         .auth_type = HTTP_AUTH_TYPE_BASIC,
         .method = HTTP_METHOD_POST,
         .timeout_ms = 20000,
+        .event_handler = http_event_handler,
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
 
     if (Serial) {
-        int httpResponseCode = esp_http_client_get_status_code(client);
-        if (httpResponseCode > 0) {
-            Serial.print("HTTP Response code: ");
-            Serial.println(httpResponseCode);
-
-            int64_t len = esp_http_client_get_content_length(client);
-            if(len >= 0 && len < sizeof(data_measurements_string))
-            {
-                if(esp_http_client_read(client, data_measurements_string, sizeof(data_measurements_string)) > 0)
-                {
-                    Serial.println(data_measurements_string);
-                }
+        if (err == ESP_OK) {
+            int httpResponseCode = esp_http_client_get_status_code(client);
+            if (httpResponseCode > 0) {
+                Serial.print("HTTP Response code: ");
+                Serial.println(httpResponseCode);  
             }
-            
-        }
+            else {
+                Serial.print("Error code: ");
+                Serial.println(httpResponseCode);
+            }
+        } 
         else {
-            Serial.print("Error code: ");
-            Serial.println(httpResponseCode);
+            Serial.print("esp_http_client_perform error: ");
+            Serial.println((int)err);
         }
     }
 
