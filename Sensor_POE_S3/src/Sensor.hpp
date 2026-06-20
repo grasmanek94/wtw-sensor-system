@@ -1,6 +1,6 @@
 #include "SensorLocation.hpp"
 
-#define SENSOR_VERSION "2.7"
+#define SENSOR_VERSION "2.8"
 
 extern const char* SENSOR_VERSION_STR;
 
