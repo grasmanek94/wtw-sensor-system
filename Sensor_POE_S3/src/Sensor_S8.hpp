@@ -28,6 +28,8 @@ public:
 
 
 private:
+	int rx_pin;
+	int tx_pin;
 	HardwareSerial ss;
 	S8_UART* uart;
 	S8_sensor data;
@@ -47,7 +49,7 @@ private:
 
 public:
 
-	Sensor_S8(int hardware_serial_nr = 2, SENSOR_LOCATION location = (SENSOR_LOCATION)0);
+	Sensor_S8(int hardware_serial_nr = 2, SENSOR_LOCATION location = (SENSOR_LOCATION)0, int rx_pin = -1, int tx_pin = -1);
 	virtual ~Sensor_S8();
 
 	virtual void setup() override;

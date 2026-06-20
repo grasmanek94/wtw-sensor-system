@@ -38,7 +38,7 @@ void Sensor_SHT4X::setup()
         return;
     }
 
-    i2c_intf->setClock(100000);
+    i2c_intf->setClock(10000);
     delay(100);
     
     found = true;

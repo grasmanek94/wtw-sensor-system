@@ -4,9 +4,9 @@
 
 #include <s8_uart.h>
 
-Sensor_S8::Sensor_S8(int hardware_serial_nr, SENSOR_LOCATION location):
-	Sensor_Interface{}, ss{ (uint8_t)hardware_serial_nr }, uart{nullptr}, data{},
-	found{false}, last_measurement_time{ 0 }, new_measurement_available{ false }, 
+Sensor_S8::Sensor_S8(int hardware_serial_nr, SENSOR_LOCATION location, int rx_pin, int tx_pin):
+	Sensor_Interface{}, rx_pin{rx_pin}, tx_pin{tx_pin}, ss{ (uint8_t)hardware_serial_nr }, 
+    uart{nullptr}, data{}, found{false}, last_measurement_time{ 0 }, new_measurement_available{ false }, 
     manual_calibration_failure {false}, calibration_status{ CALIBRATION_STATUS::UNKNOWN },
     abc_status{ ABC_STATUS::UNKNOWN }, perform_manual_calibration_time{ 0 }, location{ location }
 {
@@ -26,7 +26,10 @@ Sensor_S8::~Sensor_S8()
 void Sensor_S8::setup()
 {  
     ss.end();
-    ss.setPins(GPIO_NUM_17, GPIO_NUM_18);
+    if((rx_pin != (-1)) || (tx_pin != (-1)))
+    {
+        ss.setPins(rx_pin, tx_pin);
+    }
     ss.begin(S8_BAUDRATE);
     
     // Check if S8 is available

@@ -8,7 +8,9 @@
     {
       "type": "S8",
       "hw_uart_nr": 2,
-      "location": 0
+      "location": 0,
+       "rx": -1,
+       "tx": -1
     },
     {
       "type": "SHT4X",

@@ -1,3 +1,5 @@
+#include "Sensor.hpp"
+
 #include "constexpr_hash.hpp"
 #include "HTTPPages.hpp"
 #include "HumidityOffset.hpp"
@@ -19,8 +21,6 @@
 #include <UrlEncode.h>
 #include <Vector.h>
 
-#define SENSOR_VERSION "2.7"
-
 const char* SENSOR_VERSION_STR = SENSOR_VERSION;
 
 String SENSORS_LIST_STR("");
@@ -29,24 +29,6 @@ AsyncWebServer server(80);
 static unsigned long uptime_ticks = 0;
 static unsigned long next_measurements_send_time = 0;
 static char data_measurements_string[2048]; // 2048 max http GET len
-
-struct LocationMeasurement {
-    bool present;
-    int last_measured_co2_ppm;
-    float last_measured_rh_value;
-    float last_measured_temp ;
-    int meter_status;
-    bool temp_present;
-
-    LocationMeasurement() :
-        present{ false },
-        last_measured_co2_ppm{ 0 },
-        last_measured_rh_value{ 0.0f },
-        last_measured_temp{ 0.0f },
-        meter_status{ 0 },
-        temp_present{ false }
-    {}
-};
 
 const int MAX_SENSOR_INTERFACES_COUNT = 2;
 Sensor_Interface* sensors_array[MAX_SENSOR_INTERFACES_COUNT];
@@ -77,7 +59,9 @@ sensor_entry_callback make_switcher() {
         case "S8"_hash: {
             sensors.push_back(new Sensor_S8(
                 get_or_default(value, "hw_uart_nr", 2), 
-                get_or_default(value, "location", SENSOR_LOCATION::LIVING_ROOM)
+                get_or_default(value, "location", SENSOR_LOCATION::LIVING_ROOM),
+                get_or_default(value, "rx", 17),
+                get_or_default(value, "tx", 18)
             ));
             break;
         }
@@ -189,22 +173,26 @@ void print_measurements() {
 
 void process_sensor_data(Sensor_Interface* sensor) {
     if (sensor->has_co2_ppm()) {
+        measurements[(int)sensor->get_location()].has_co2 = true;
         measurements[(int)sensor->get_location()].present = true;
         measurements[(int)sensor->get_location()].last_measured_co2_ppm = sensor->get_co2_ppm();
     }
 
     if (sensor->has_temperature()) {
+        measurements[(int)sensor->get_location()].has_temp = true;
         measurements[(int)sensor->get_location()].present = true;
         measurements[(int)sensor->get_location()].temp_present = true;
         measurements[(int)sensor->get_location()].last_measured_temp = sensor->get_temperature();
     }
 
     if (sensor->has_relative_humidity()) {
+        measurements[(int)sensor->get_location()].has_rh = true;
         measurements[(int)sensor->get_location()].present = true;
         measurements[(int)sensor->get_location()].last_measured_rh_value = sensor->get_relative_humidity();
     }
 
     if (sensor->has_meter_status()) {
+        measurements[(int)sensor->get_location()].has_meter_status = true;
         measurements[(int)sensor->get_location()].present = true;
         measurements[(int)sensor->get_location()].meter_status = sensor->get_meter_status();
     }

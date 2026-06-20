@@ -1,6 +1,8 @@
 #include "HTTPPages.hpp"
 
 #include "LittleFS.hpp"
+#include "MyEth.hpp"
+#include "Sensor.hpp"
 
 #include <ESPAsyncWebServer.h>
 #include <Update.h>
@@ -127,12 +129,25 @@ static String html_encode(String data) {
 }
 
 static String add_form_label(String id, String name, String value) {
-	return "<label for=\"" + id + "\">" + name + ":</label><br>\n"
+	return "<label for=\"" + id + "\">" + html_encode(name) + ":</label><br>\n"
 		"<input type=\"text\" id=\"" + id + "\" name=\"" + id + "\" value=\"" + html_encode(value) + "\"><br>\n";
 }
 
+static String add_form_label_ro(String name, String value) {
+	return "<label>" + html_encode(name) + ":</label><br>\n"
+		"<input type=\"text\" value=\"" + html_encode(value) + "\" disabled><br>\n";
+}
+
+static String add_fieldset_start(String text) {
+	return "<fieldset><legend>" + html_encode(text) + "</legend>";
+}
+
+static String add_fieldset_end() {
+	return "</fieldset>";
+}
+
 static String add_form_label_textarea(String id, String name, String value) {
-	return "<label for=\"" + id + "\">" + name + ":</label><br>\n"
+	return "<label for=\"" + id + "\">" + html_encode(name) + ":</label><br>\n"
 		"<textarea id=\"" + id + "\" name=\"" + id + "\" cols=\"100\" rows=\"50\">" + html_encode(value) + "</textarea><br>\n";
 }
 
@@ -157,6 +172,42 @@ void http_page_config(AsyncWebServerRequest* request) {
 #undef ADD_OPTION_FUNC_ML
 #undef ADD_OPTION_FUNC
 #undef ADD_OPTION
+
+	html += add_form_label_ro("MAC Address", ethernet_get_mac_str());
+	html += add_form_label_ro("IPv6 Link-Local Address", ethernet_get_ipv6_address_str());
+	html += add_form_label_ro("Local Address", ethernet_get_local_address_str());
+
+	for(uint8_t sensor_location = 0; sensor_location < (uint8_t)SENSOR_LOCATION::NUM_LOCATIONS; ++sensor_location)
+	{
+		auto& measurement = measurements[sensor_location];
+		if(measurement.present)
+		{
+			html += add_fieldset_start("Location " + String((int)sensor_location, DEC));
+
+			if(measurement.has_temp)
+			{
+				html += add_form_label_ro("Temperature (*C)", String(measurement.last_measured_temp));
+			}
+
+			if(measurement.has_rh)
+			{
+				html += add_form_label_ro("Relative Humidity (%)", String(measurement.last_measured_rh_value));
+			}
+
+			if(measurement.has_co2)
+			{
+				html += add_form_label_ro("CO2 PPM", String(measurement.last_measured_co2_ppm));
+			}
+
+			if(measurement.has_meter_status)
+			{
+				html += add_form_label_ro("Status", String(measurement.meter_status));
+			}
+
+			html += add_fieldset_end();
+		}
+	}
+	
 
 	html += config_html_end;
 	request->send(200, "text/html", html);
