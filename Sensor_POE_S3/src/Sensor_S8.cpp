@@ -44,7 +44,7 @@ void Sensor_S8::setup()
 
     // Show basic S8 sensor info
     Serial.println(">>> SenseAir S8 NDIR CO2 sensor <<<");
-    printf("Firmware version: %s\n", data.firm_version);
+    Serial.printf("Firmware version: %s\n", data.firm_version);
     data.sensor_type_id = uart->get_sensor_type_ID();
     Serial.print("Sensor type: 0x"); printIntToHex(data.sensor_type_id, 3); Serial.println("");
 
