@@ -1,6 +1,7 @@
 #include "Sensor.hpp"
 
 #include "constexpr_hash.hpp"
+#include "esp_http_client.h"
 #include "HTTPPages.hpp"
 #include "HumidityOffset.hpp"
 #include "LittleFS.hpp"
@@ -210,20 +211,33 @@ void perform_measurements() {
 }
 
 void perform_http_request(const char* request) {
-    HTTPClient http;
+    esp_http_client_config_t config = {
+        .url = request,
+        .username = global_config_data.auth_user.c_str(),
+        .password = global_config_data.auth_password.c_str(),
+        .auth_type = HTTP_AUTH_TYPE_BASIC,
+        .method = HTTP_METHOD_POST,
+        .timeout_ms = 20000,
+    };
 
-    http.begin(request);
-    http.setAuthorization(global_config_data.auth_user.c_str(), global_config_data.auth_password.c_str());
-    http.setTimeout(20);
-
-    int httpResponseCode = http.POST("");
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+    esp_err_t err = esp_http_client_perform(client);
 
     if (Serial) {
+        int httpResponseCode = esp_http_client_get_status_code(client);
         if (httpResponseCode > 0) {
             Serial.print("HTTP Response code: ");
             Serial.println(httpResponseCode);
-            String payload = http.getString();
-            Serial.println(payload);
+
+            int64_t len = esp_http_client_get_content_length(client);
+            if(len >= 0 && len < sizeof(data_measurements_string))
+            {
+                if(esp_http_client_read(client, data_measurements_string, sizeof(data_measurements_string)) > 0)
+                {
+                    Serial.println(data_measurements_string);
+                }
+            }
+            
         }
         else {
             Serial.print("Error code: ");
@@ -231,7 +245,7 @@ void perform_http_request(const char* request) {
         }
     }
 
-    http.end();
+    esp_http_client_cleanup(client);
 }
 
 bool fill_location_data(int location_index, char* buffer, size_t buffer_size) {
@@ -276,12 +290,20 @@ void send_measurements() {
     uint8_t mac[6];
     bool send = false;
     int data_index = 0;
+    const char* protocol = "";
 
     ++uptime_ticks;
 
     ethernet_get_mac(mac);
 
-    snprintf(data_measurements_string, sizeof(data_measurements_string), "http://%s/update?deviceId=%02X%02X%02X%02X%02X%02X&seqnr=%d", global_config_data.destination_address.c_str(), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], uptime_ticks);
+    if( !global_config_data.destination_address.startsWith("http://") && 
+        !global_config_data.destination_address.startsWith("https://")) 
+    {
+        protocol = "http://";
+    }
+
+    snprintf(data_measurements_string, sizeof(data_measurements_string), "%s%s/update?deviceId=%02X%02X%02X%02X%02X%02X&seqnr=%d",  protocol, global_config_data.destination_address.c_str(), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], uptime_ticks);
+
 
     for (int i = 0; i < (int)SENSOR_LOCATION::NUM_LOCATIONS; ++i) {
         if (!measurements[i].present) {
